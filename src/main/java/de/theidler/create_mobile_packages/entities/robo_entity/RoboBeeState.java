@@ -4,6 +4,7 @@ public enum RoboBeeState {
     IDLE,
     TAKEOFF,
     NAVIGATE_TO_TARGET,
+    DIMENSIONAL_TELEPORT,
     ALIGN_FOR_DELIVERY,
     DELIVER_PACKAGE,
     LAND,

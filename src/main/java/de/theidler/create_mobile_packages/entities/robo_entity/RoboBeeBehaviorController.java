@@ -3,15 +3,19 @@ package de.theidler.create_mobile_packages.entities.robo_entity;
 import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
+import de.theidler.create_mobile_packages.robo.CrossDimensionalBeePortTarget;
 import de.theidler.create_mobile_packages.robo.PlayerTarget;
+import de.theidler.create_mobile_packages.robo.RoboManager;
 import de.theidler.create_mobile_packages.robo.VirtualRobo;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-
-import static de.theidler.create_mobile_packages.CMPHelper.calcETA;
 
 import static de.theidler.create_mobile_packages.CMPHelper.calcETA;
 
@@ -29,6 +33,9 @@ public class RoboBeeBehaviorController {
                 break;
             case NAVIGATE_TO_TARGET:
                 handleNavigateToTarget(robo);
+                break;
+            case DIMENSIONAL_TELEPORT:
+                handleDimensionalTeleport(robo);
                 break;
             case ALIGN_FOR_DELIVERY:
                 handleAlignForDelivery(robo);
@@ -84,6 +91,20 @@ public class RoboBeeBehaviorController {
             setState(RoboBeeState.IDLE);
             return;
         }
+
+        // Check if we need to teleport to another dimension
+        if (robo.needsDimensionalTeleport()) {
+            // Fly up to sky height first, then teleport
+            double teleportHeight = 100; // Fly up before teleporting
+            Vec3 teleportTarget = new Vec3(robo.getCurrentPos().x, teleportHeight, robo.getCurrentPos().z);
+            double speed = robo.getSpeed() / 20.0;
+            moveTo(robo, teleportTarget, speed);
+            if (robo.getCurrentPos().y >= teleportHeight - speed) {
+                setState(RoboBeeState.DIMENSIONAL_TELEPORT);
+            }
+            return;
+        }
+
         if (robo.getTarget() != null) {
             robo.getTarget().setETA(calcETA(robo.getTargetPosition(), robo.getCurrentPos()));
             if (robo.getTarget() instanceof PlayerTarget playerTarget)
@@ -99,6 +120,59 @@ public class RoboBeeBehaviorController {
             setState(RoboBeeState.ALIGN_FOR_DELIVERY);
             robo.setTargetVelocity(Vec3.ZERO);
         }
+    }
+
+    /**
+     * Handles the dimensional teleport state.
+     * Teleports the robo to the target dimension and transfers it to that dimension's RoboManager.
+     */
+    private void handleDimensionalTeleport(VirtualRobo robo) {
+        if (!robo.isCrossDimensionalEnabled()) {
+            setState(RoboBeeState.NAVIGATE_TO_TARGET);
+            return;
+        }
+
+        ResourceKey<Level> targetDim = robo.getTargetDimension();
+        if (targetDim == null || targetDim.equals(robo.getServerLevel().dimension())) {
+            // No dimension change needed
+            setState(RoboBeeState.NAVIGATE_TO_TARGET);
+            return;
+        }
+
+        // Despawn visual entity in current dimension
+        robo.despawnEntity();
+
+        // Get target dimension level
+        ServerLevel currentLevel = robo.getServerLevel();
+        MinecraftServer server = currentLevel.getServer();
+        ServerLevel targetLevel = server.getLevel(targetDim);
+
+        if (targetLevel == null) {
+            // Target dimension not available, go back to navigation
+            setState(RoboBeeState.NAVIGATE_TO_TARGET);
+            return;
+        }
+
+        // Remove from current dimension's manager
+        RoboManager.get(currentLevel).remove(robo.getId());
+
+        // Update robo's level reference
+        robo.setServerLevel(targetLevel);
+
+        // Teleport to above target position in the new dimension
+        Vec3 targetPos = robo.getTargetPosition();
+        if (targetPos != null) {
+            robo.setPos(new Vec3(targetPos.x, targetPos.y + 2, targetPos.z));
+        }
+
+        // Clear target dimension since we've arrived
+        robo.setTargetDimension(null);
+
+        // Add to new dimension's manager
+        RoboManager.get(targetLevel).add(robo);
+
+        // Continue to align for delivery
+        setState(RoboBeeState.ALIGN_FOR_DELIVERY);
     }
 
     private void handleAlignForDelivery(VirtualRobo robo) {
