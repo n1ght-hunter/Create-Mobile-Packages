@@ -4,7 +4,6 @@ import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
-import de.theidler.create_mobile_packages.robo.CrossDimensionalBeePortTarget;
 import de.theidler.create_mobile_packages.robo.PlayerTarget;
 import de.theidler.create_mobile_packages.robo.RoboManager;
 import de.theidler.create_mobile_packages.robo.VirtualRobo;
@@ -161,10 +160,11 @@ public class RoboBeeBehaviorController {
         // Update robo's level reference
         robo.setServerLevel(targetLevel);
 
-        // Teleport to above target position in the new dimension
+        // Teleport to high above target position in the new dimension so it can fly down
         Vec3 targetPos = robo.getTargetPosition();
+        double teleportHeight = 100; // Spawn high above target to fly down
         if (targetPos != null) {
-            robo.setPos(new Vec3(targetPos.x, targetPos.y + 2, targetPos.z));
+            robo.setPos(new Vec3(targetPos.x, targetPos.y + teleportHeight, targetPos.z));
         }
 
         // Clear target dimension since we've arrived
@@ -173,8 +173,8 @@ public class RoboBeeBehaviorController {
         // Add to new dimension's manager
         RoboManager.get(targetLevel).add(robo);
 
-        // Continue to align for delivery
-        setState(RoboBeeState.ALIGN_FOR_DELIVERY);
+        // Continue to navigate to target (fly down from teleport height)
+        setState(RoboBeeState.NAVIGATE_TO_TARGET);
     }
 
     private void handleAlignForDelivery(VirtualRobo robo) {

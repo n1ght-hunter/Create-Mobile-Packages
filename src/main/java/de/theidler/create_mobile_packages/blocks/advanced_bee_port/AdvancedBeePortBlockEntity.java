@@ -6,7 +6,6 @@ import com.simibubi.create.content.logistics.packagePort.frogport.FrogportBlockE
 import com.simibubi.create.content.logistics.packagerLink.LogisticallyLinkedBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import de.theidler.create_mobile_packages.CMPHelper;
-import de.theidler.create_mobile_packages.CreateMobilePackages;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.index.CMPBlockEntities;
@@ -323,10 +322,24 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         String address = PackageItem.getAddress(itemStack);
         if (address.isBlank()) return;
 
+        // Check players in current dimension first
         for (Player player : level.players()) {
             if (CMPHelper.doesAddressMatchPlayer(player, address) && CMPHelper.isWithinRange(player.blockPosition(), this.getBlockPos())) {
                 sendToPlayer(player, itemStack, slot);
                 return;
+            }
+        }
+
+        // If Ender Upgrade is installed, search for players across all dimensions
+        if (hasEnderUpgrade() && level instanceof ServerLevel serverLevel && serverLevel.getServer() != null) {
+            for (ServerLevel otherLevel : serverLevel.getServer().getAllLevels()) {
+                if (otherLevel == level) continue; // Already checked this dimension
+                for (Player player : otherLevel.players()) {
+                    if (CMPHelper.doesAddressMatchPlayer(player, address)) {
+                        sendToPlayerCrossDimensional(player, itemStack, slot);
+                        return;
+                    }
+                }
             }
         }
 
@@ -338,6 +351,21 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         }
     }
 
+    /**
+     * Sends a package to a player in a different dimension.
+     */
+    private void sendToPlayerCrossDimensional(Player player, ItemStack itemStack, int slot) {
+        if (roboBeeInventory.getStackInSlot(0).getCount() <= 0) {
+            if (!hasRoboRequest() && level != null) {
+                requestRoboEntity();
+                return;
+            }
+            return;
+        }
+        roboSendCooldown = 2;
+        sendAdvancedDrone(itemStack, slot);
+    }
+
     private void sendToPlayer(Player player, ItemStack itemStack, int slot) {
         if (roboBeeInventory.getStackInSlot(0).getCount() <= 0) {
             if (!hasRoboRequest() && level != null) {
@@ -347,7 +375,6 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
             return;
         }
         roboSendCooldown = 2;
-        CreateMobilePackages.LOGGER.info("Advanced Bee Port: Sending package to player: {}", player.getName().getString());
         sendAdvancedDrone(itemStack, slot);
     }
 

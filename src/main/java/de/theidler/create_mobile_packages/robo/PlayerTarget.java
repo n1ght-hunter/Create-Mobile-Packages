@@ -32,6 +32,33 @@ public class PlayerTarget implements RoboTarget {
         return new PlayerTarget(player);
     }
 
+    /**
+     * Searches for a player across all dimensions.
+     * Used when the Ender upgrade enables cross-dimensional delivery.
+     */
+    public static PlayerTarget fromAddressAcrossDimensions(ServerLevel level, String address) {
+        // First check current dimension
+        ServerPlayer player = level.getPlayers((p) -> doesAddressMatchPlayer(p, address)).stream().findFirst().orElse(null);
+        if (player != null) {
+            return new PlayerTarget(player);
+        }
+
+        // Search all dimensions
+        if (level.getServer() != null) {
+            for (ServerLevel otherLevel : level.getServer().getAllLevels()) {
+                if (otherLevel.dimension().equals(level.dimension())) {
+                    continue; // Already checked
+                }
+                player = otherLevel.getPlayers((p) -> doesAddressMatchPlayer(p, address)).stream().findFirst().orElse(null);
+                if (player != null) {
+                    return new PlayerTarget(player);
+                }
+            }
+        }
+
+        return new PlayerTarget(null);
+    }
+
     @Override
     public @Nullable Vec3 getTargetPos() {
         if (player == null) return null;

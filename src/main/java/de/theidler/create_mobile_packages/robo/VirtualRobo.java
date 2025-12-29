@@ -5,7 +5,6 @@ import de.theidler.create_mobile_packages.CMPHelper;
 import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
-import de.theidler.create_mobile_packages.blocks.bee_port.GlobalDronePortTracker;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboBeeBehaviorController;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboEntity;
 import de.theidler.create_mobile_packages.index.CMPEntities;
@@ -19,6 +18,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +46,9 @@ public class VirtualRobo {
     private RoboRequest request = null;
     private boolean crossDimensionalEnabled = false;
     private @Nullable ResourceKey<Level> targetDimension = null;
+    private @Nullable BlockPos originPortPos = null;
+    private @Nullable ResourceKey<Level> originPortDimension = null;
+    private boolean originIsAdvancedPort = false;
 
     public VirtualRobo(ServerLevel level, UUID id, ItemStack itemStack, BlockPos spawnPos, UUID logisticsNetworkId) {
         this.id = id;
@@ -56,6 +59,11 @@ public class VirtualRobo {
         setTargetFromItemStack(itemStack);
         this.currentPos = spawnPos.getCenter().subtract(0, 0.5, 0);
         this.behaviorController = new RoboBeeBehaviorController();
+        // Remember origin port
+        this.originPortPos = spawnPos;
+        this.originPortDimension = level.dimension();
+        // Check if origin is an Advanced port
+        this.originIsAdvancedPort = level.getBlockEntity(spawnPos) instanceof AdvancedBeePortBlockEntity;
     }
 
     /**
@@ -86,6 +94,20 @@ public class VirtualRobo {
         if (roboTag.contains("targetDimension")) {
             String dimString = roboTag.getString("targetDimension");
             virtualRobo.setTargetDimension(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimString)));
+        }
+        // Load origin port info
+        if (roboTag.contains("originPortX")) {
+            virtualRobo.originPortPos = new BlockPos(
+                roboTag.getInt("originPortX"),
+                roboTag.getInt("originPortY"),
+                roboTag.getInt("originPortZ")
+            );
+        }
+        if (roboTag.contains("originPortDimension")) {
+            virtualRobo.originPortDimension = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(roboTag.getString("originPortDimension")));
+        }
+        if (roboTag.contains("originIsAdvancedPort")) {
+            virtualRobo.originIsAdvancedPort = roboTag.getBoolean("originIsAdvancedPort");
         }
         if (!virtualRobo.getItemStack().isEmpty()) {
             virtualRobo.setPackageHeightScale(1.0f);
@@ -128,38 +150,147 @@ public class VirtualRobo {
         // if the target is still valid and in the correct network, do nothing
         if (target != null && target.isValid()) return;
 
-        // try finding a Player first (same dimension only)
-        target = PlayerTarget.fromAddress(serverLevel, targetAddress);
-        if (target.isValid()) {
-            targetDimension = serverLevel.dimension();
-            return;
+        // try finding a Player first
+        if (crossDimensionalEnabled && CMPConfigs.server().enderUpgradeEnabled.get()) {
+            // Search across all dimensions for the player
+            target = PlayerTarget.fromAddressAcrossDimensions(serverLevel, targetAddress);
+            if (target.isValid()) {
+                // Set target dimension to the player's dimension
+                Player player = target.asPlayer();
+                if (player != null && player.level() instanceof net.minecraft.server.level.ServerLevel playerLevel) {
+                    targetDimension = playerLevel.dimension();
+                } else {
+                    targetDimension = serverLevel.dimension();
+                }
+                return;
+            }
+        } else {
+            // Same dimension only
+            target = PlayerTarget.fromAddress(serverLevel, targetAddress);
+            if (target.isValid()) {
+                targetDimension = serverLevel.dimension();
+                return;
+            }
         }
 
-        // if no player found, try finding any port (BeePort or AdvancedBeePort) within the network (same dimension)
-        net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = CMPHelper.getClosestAnyPort(serverLevel, targetAddress, BlockPos.containing(currentPos), this, logisticsNetworkId);
-        if (targetBlockEntity instanceof BeePortBlockEntity bpbe) {
-            target = new BeePortBlockEntityTarget(bpbe);
-            targetDimension = serverLevel.dimension();
-            return;
-        } else if (targetBlockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
-            target = new AdvancedBeePortBlockEntityTarget(abpbe);
-            targetDimension = serverLevel.dimension();
-            return;
+        // Try to return to origin port first
+        if (originPortPos != null && originPortDimension != null) {
+            if (tryOriginPort()) return;
         }
+
+        // Origin port not available, find closest port with fallback logic
+        // Priority: same type as origin -> other type -> cross-dimensional (if enabled)
+        if (tryFindPortInCurrentDimension()) return;
 
         // If cross-dimensional is enabled and no target found in current dimension, search other dimensions
         if (crossDimensionalEnabled && CMPConfigs.server().enderUpgradeEnabled.get()) {
-            GlobalDronePortTracker.CrossDimensionalTarget crossDimTarget =
-                    GlobalDronePortTracker.findClosestPortAcrossDimensions(
-                            targetAddress,
-                            logisticsNetworkId,
-                            BlockPos.containing(currentPos),
-                            serverLevel.dimension()
-                    );
+            tryFindPortAcrossDimensions();
+        }
+    }
 
-            if (crossDimTarget != null) {
-                target = new CrossDimensionalBeePortTarget(crossDimTarget.level(), crossDimTarget.pos());
-                targetDimension = crossDimTarget.dimension();
+    /**
+     * Tries to return to the origin port.
+     * @return true if origin port was found and set as target
+     */
+    private boolean tryOriginPort() {
+        // Check if origin port is in current dimension
+        if (serverLevel.dimension().equals(originPortDimension)) {
+            net.minecraft.world.level.block.entity.BlockEntity originBE = serverLevel.getBlockEntity(originPortPos);
+            if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved() && abpbe.canAcceptEntity(this, !itemStack.isEmpty())) {
+                target = new AdvancedBeePortBlockEntityTarget(abpbe);
+                targetDimension = serverLevel.dimension();
+                return true;
+            } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved() && bpbe.canAcceptEntity(this, !itemStack.isEmpty())) {
+                target = new BeePortBlockEntityTarget(bpbe);
+                targetDimension = serverLevel.dimension();
+                return true;
+            }
+        } else if (crossDimensionalEnabled && serverLevel.getServer() != null) {
+            // Origin port is in different dimension, need to teleport back
+            ServerLevel originLevel = serverLevel.getServer().getLevel(originPortDimension);
+            if (originLevel != null) {
+                net.minecraft.world.level.block.entity.BlockEntity originBE = originLevel.getBlockEntity(originPortPos);
+                if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved()) {
+                    target = new CrossDimensionalBeePortTarget(originLevel, originPortPos);
+                    targetDimension = originPortDimension;
+                    return true;
+                } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
+                    target = new CrossDimensionalBeePortTarget(originLevel, originPortPos);
+                    targetDimension = originPortDimension;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Tries to find a port in the current dimension with fallback logic.
+     * If origin was Advanced port: try Advanced first, then regular
+     * If origin was regular port: try regular first, then Advanced
+     * @return true if a port was found and set as target
+     */
+    private boolean tryFindPortInCurrentDimension() {
+        net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = null;
+        BlockPos currentBlockPos = BlockPos.containing(currentPos);
+
+        if (originIsAdvancedPort) {
+            // Origin was Advanced port - try Advanced first, then regular
+            targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+            if (targetBlockEntity == null) {
+                targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+            }
+        } else {
+            // Origin was regular port - try regular first, then Advanced
+            targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+            if (targetBlockEntity == null) {
+                targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+            }
+        }
+
+        if (targetBlockEntity instanceof BeePortBlockEntity bpbe) {
+            target = new BeePortBlockEntityTarget(bpbe);
+            targetDimension = serverLevel.dimension();
+            return true;
+        } else if (targetBlockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
+            target = new AdvancedBeePortBlockEntityTarget(abpbe);
+            targetDimension = serverLevel.dimension();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Tries to find a port across all dimensions (for cross-dimensional bees).
+     * Uses same fallback logic: same type as origin first, then other type.
+     */
+    private void tryFindPortAcrossDimensions() {
+        if (serverLevel.getServer() == null) return;
+
+        for (ServerLevel otherLevel : serverLevel.getServer().getAllLevels()) {
+            if (otherLevel.dimension().equals(serverLevel.dimension())) continue;
+
+            BlockPos currentBlockPos = BlockPos.containing(currentPos);
+            net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = null;
+
+            if (originIsAdvancedPort) {
+                // Try Advanced first, then regular
+                targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+                if (targetBlockEntity == null) {
+                    targetBlockEntity = CMPHelper.getClosestBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+                }
+            } else {
+                // Try regular first, then Advanced
+                targetBlockEntity = CMPHelper.getClosestBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+                if (targetBlockEntity == null) {
+                    targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
+                }
+            }
+
+            if (targetBlockEntity != null) {
+                target = new CrossDimensionalBeePortTarget(otherLevel, targetBlockEntity.getBlockPos());
+                targetDimension = otherLevel.dimension();
+                return;
             }
         }
     }
@@ -251,6 +382,16 @@ public class VirtualRobo {
         if (targetDimension != null) {
             tag.putString("targetDimension", targetDimension.location().toString());
         }
+        // Save origin port info
+        if (originPortPos != null) {
+            tag.putInt("originPortX", originPortPos.getX());
+            tag.putInt("originPortY", originPortPos.getY());
+            tag.putInt("originPortZ", originPortPos.getZ());
+        }
+        if (originPortDimension != null) {
+            tag.putString("originPortDimension", originPortDimension.location().toString());
+        }
+        tag.putBoolean("originIsAdvancedPort", originIsAdvancedPort);
         if (!getItemStack().isEmpty()) {
             tag.put("itemStack", getItemStack().save(serverLevel.registryAccess(), new CompoundTag()));
         }
