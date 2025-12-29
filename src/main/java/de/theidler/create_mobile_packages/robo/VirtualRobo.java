@@ -2,6 +2,7 @@ package de.theidler.create_mobile_packages.robo;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.CMPHelper;
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.blocks.bee_port.GlobalDronePortTracker;
@@ -134,10 +135,14 @@ public class VirtualRobo {
             return;
         }
 
-        // if no player found, try finding a BeePortBlockEntity within the network (same dimension)
-        BeePortBlockEntity targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, targetAddress, BlockPos.containing(currentPos), this, logisticsNetworkId);
-        if (targetBlockEntity != null) {
-            target = new BeePortBlockEntityTarget(targetBlockEntity);
+        // if no player found, try finding any port (BeePort or AdvancedBeePort) within the network (same dimension)
+        net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = CMPHelper.getClosestAnyPort(serverLevel, targetAddress, BlockPos.containing(currentPos), this, logisticsNetworkId);
+        if (targetBlockEntity instanceof BeePortBlockEntity bpbe) {
+            target = new BeePortBlockEntityTarget(bpbe);
+            targetDimension = serverLevel.dimension();
+            return;
+        } else if (targetBlockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
+            target = new AdvancedBeePortBlockEntityTarget(abpbe);
             targetDimension = serverLevel.dimension();
             return;
         }
@@ -316,6 +321,25 @@ public class VirtualRobo {
         } else if (serverLevel.getBlockEntity(BlockPos.containing(currentPos.subtract(0,2,0))) instanceof BeePortBlockEntity bpbe) {
             return bpbe;
         }
+        return null;
+    }
+
+    /**
+     * Gets the starting port block entity, which can be either a BeePortBlockEntity or AdvancedBeePortBlockEntity.
+     * Returns the BlockEntity for position calculations and port operations.
+     */
+    public @Nullable net.minecraft.world.level.block.entity.BlockEntity getStartPortBlockEntity() {
+        net.minecraft.world.level.block.entity.BlockEntity be;
+
+        be = serverLevel.getBlockEntity(BlockPos.containing(currentPos));
+        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+
+        be = serverLevel.getBlockEntity(BlockPos.containing(currentPos.subtract(0,1,0)));
+        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+
+        be = serverLevel.getBlockEntity(BlockPos.containing(currentPos.subtract(0,2,0)));
+        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+
         return null;
     }
 

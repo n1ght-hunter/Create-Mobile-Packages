@@ -411,11 +411,15 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
+        if (level instanceof ServerLevel serverLevel) {
+            AdvancedDronePortTracker.get(serverLevel).add(this);
+        }
     }
 
     private void invalidateTarget() {
         if (level instanceof ServerLevel serverLevel) {
             RoboManager.get(serverLevel).getRoboRequests(this.getBlockPos()).forEach(roboRequest -> roboRequest.setStatus(RoboRequest.Status.CANCELLED));
+            AdvancedDronePortTracker.get(serverLevel).remove(this);
         }
     }
 

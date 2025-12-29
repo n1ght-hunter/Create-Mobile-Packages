@@ -1,6 +1,7 @@
 package de.theidler.create_mobile_packages.entities.robo_entity;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.robo.CrossDimensionalBeePortTarget;
@@ -60,16 +61,17 @@ public class RoboBeeBehaviorController {
     }
 
     private void handleTakeoff(VirtualRobo robo) {
+        BlockEntity startPort = robo.getStartPortBlockEntity();
         if (init) {
-            openPort(robo.getStartBeePortBlockEntity(), true);
+            openPort(startPort, true);
             init = false;
         }
-        if (robo.getStartBeePortBlockEntity() == null) {
+        if (startPort == null) {
             setState(RoboBeeState.NAVIGATE_TO_TARGET);
             return;
         }
-        Vec3 mid = getAbove(robo.getStartBeePortBlockEntity(), 1.6);
-        Vec3 end = getAbove(robo.getStartBeePortBlockEntity(), 2);
+        Vec3 mid = getAbove(startPort, 1.6);
+        Vec3 end = getAbove(startPort, 2);
 
         double y = robo.getCurrentPos().y;
         double speed = (robo.getSpeed() / 20.0) / 2; // Takeoff slower
@@ -81,7 +83,7 @@ public class RoboBeeBehaviorController {
         } else {
             robo.setPos(end);
             robo.setTargetVelocity(Vec3.ZERO);
-            openPort(robo.getStartBeePortBlockEntity(), false);
+            openPort(startPort, false);
             setState(RoboBeeState.NAVIGATE_TO_TARGET);
         }
     }
@@ -177,7 +179,7 @@ public class RoboBeeBehaviorController {
 
     private void handleAlignForDelivery(VirtualRobo robo) {
         if (init) {
-            openPort(robo.getTarget() != null ? robo.getTarget().asBeePortBlockEntity() : null, true);
+            openPort(robo.getTarget() != null ? robo.getTarget().asPortBlockEntity() : null, true);
             init = false;
         }
         if (robo.rotateToSnap() == 0) {
@@ -186,7 +188,7 @@ public class RoboBeeBehaviorController {
     }
 
     private void handleLand(VirtualRobo robo) {
-        @Nullable BeePortBlockEntity port = robo.getTarget() != null ? robo.getTarget().asBeePortBlockEntity() : null;
+        @Nullable BlockEntity port = robo.getTarget() != null ? robo.getTarget().asPortBlockEntity() : null;
         if (port == null) {
             setState(RoboBeeState.DELIVER_PACKAGE);
             return;
@@ -209,7 +211,7 @@ public class RoboBeeBehaviorController {
         } else {
             robo.setPos(end);
             robo.setTargetVelocity(Vec3.ZERO);
-            openPort(robo.getTarget().asBeePortBlockEntity(), false);
+            openPort(robo.getTarget().asPortBlockEntity(), false);
             setState(RoboBeeState.DELIVER_PACKAGE);
         }
     }
@@ -224,9 +226,14 @@ public class RoboBeeBehaviorController {
                 robo.invalidateTarget();
             }
         }
-        // Try to deliver to block entity
-        if (robo.getTarget() != null && !delivered && robo.getTarget().asBeePortBlockEntity() != null && !robo.getItemStack().isEmpty()) {
-            delivered = robo.getTarget().asBeePortBlockEntity().addItemStack(robo.getItemStack());
+        // Try to deliver to block entity (BeePort or AdvancedBeePort)
+        if (robo.getTarget() != null && !delivered && robo.getTarget().asPortBlockEntity() != null && !robo.getItemStack().isEmpty()) {
+            BlockEntity targetPort = robo.getTarget().asPortBlockEntity();
+            if (targetPort instanceof BeePortBlockEntity bpbe) {
+                delivered = bpbe.addItemStack(robo.getItemStack());
+            } else if (targetPort instanceof AdvancedBeePortBlockEntity abpbe) {
+                delivered = abpbe.addItemStack(robo.getItemStack());
+            }
             if (delivered) {
                 robo.setItemStack(ItemStack.EMPTY);
                 robo.invalidateTarget();
@@ -236,8 +243,8 @@ public class RoboBeeBehaviorController {
         // updating target Address with update -> creates new target if target was null
         robo.setTargetAddress(PackageItem.getAddress(robo.getItemStack()), true);
 
-        // if the new taget is a Bee Port and the Robo is in it then shutdown the Robo.
-        if (robo.getTarget() != null && robo.getTarget().asBeePortBlockEntity() != null) {
+        // if the new target is a port and the Robo is in it then shutdown the Robo.
+        if (robo.getTarget() != null && robo.getTarget().asPortBlockEntity() != null) {
             if (BlockPos.containing(robo.getCurrentPos()).equals(BlockPos.containing(robo.getTargetPosition()))) {
                 setState(RoboBeeState.SHUTDOWN);
                 return;
@@ -248,8 +255,12 @@ public class RoboBeeBehaviorController {
     }
 
     private void handleShutdown(VirtualRobo robo) {
-        if (robo.getServerLevel().getBlockEntity(BlockPos.containing(robo.getCurrentPos())) instanceof BeePortBlockEntity bpbe)
+        BlockEntity blockEntity = robo.getServerLevel().getBlockEntity(BlockPos.containing(robo.getCurrentPos()));
+        if (blockEntity instanceof BeePortBlockEntity bpbe) {
             bpbe.addBeeToRoboBeeInventory(1);
+        } else if (blockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
+            abpbe.addBeeToRoboBeeInventory(1);
+        }
         if (robo.getRequest() != null) {
             robo.getRequest().setStatus(RoboRequest.Status.DONE);
         }
@@ -257,9 +268,11 @@ public class RoboBeeBehaviorController {
     }
 
     // Helper Functions
-    private void openPort(BeePortBlockEntity port, boolean open) {
-        if (port != null) {
-           BeePortBlockEntity.setOpen(port, open);
+    private void openPort(BlockEntity port, boolean open) {
+        if (port instanceof BeePortBlockEntity bpbe) {
+            BeePortBlockEntity.setOpen(bpbe, open);
+        } else if (port instanceof AdvancedBeePortBlockEntity abpbe) {
+            AdvancedBeePortBlockEntity.setOpen(abpbe, open);
         }
     }
 
