@@ -99,6 +99,21 @@ public class RoboManager extends SavedData {
         return id;
     }
 
+    /**
+     * Creates a new advanced robo with custom speed and cross-dimensional capability.
+     * Used by Advanced Bee Port with upgrades.
+     */
+    public UUID newAdvancedRobo(ServerLevel level, ItemStack itemStack, BlockPos spawnPos,
+                                 UUID logisticsNetworkId, float packageHeightScale,
+                                 int speed, boolean crossDimensional) {
+        UUID id = UUID.randomUUID();
+        VirtualRobo robo = new VirtualRobo(level, id, itemStack, spawnPos, logisticsNetworkId, speed, crossDimensional);
+        robo.setPackageHeightScale(packageHeightScale);
+        this.add(robo);
+        setDirty();
+        return id;
+    }
+
     public void newRequestRobo(ServerLevel level, BlockPos spawnPos, RoboRequest request) {
         UUID id = UUID.randomUUID();
         VirtualRobo robo = new VirtualRobo(level, id, ItemStack.EMPTY, spawnPos, request.getLogisticsNetworkId());
