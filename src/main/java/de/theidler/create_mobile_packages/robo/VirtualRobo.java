@@ -4,6 +4,7 @@ import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.CMPHelper;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
+import de.theidler.create_mobile_packages.blocks.bee_port.GlobalDronePortTracker;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboBeeBehaviorController;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboEntity;
 import de.theidler.create_mobile_packages.index.CMPEntities;
@@ -11,7 +12,11 @@ import de.theidler.create_mobile_packages.index.config.CMPConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -38,6 +43,8 @@ public class VirtualRobo {
     private ServerLevel serverLevel;
     private float packageHeightScale;
     private RoboRequest request = null;
+    private boolean crossDimensionalEnabled = false;
+    private @Nullable ResourceKey<Level> targetDimension = null;
 
     public VirtualRobo(ServerLevel level, UUID id, ItemStack itemStack, BlockPos spawnPos, UUID logisticsNetworkId) {
         this.id = id;
@@ -50,11 +57,22 @@ public class VirtualRobo {
         this.behaviorController = new RoboBeeBehaviorController();
     }
 
+    /**
+     * Constructor for advanced robo with custom speed and cross-dimensional capability.
+     */
+    public VirtualRobo(ServerLevel level, UUID id, ItemStack itemStack, BlockPos spawnPos,
+                       UUID logisticsNetworkId, int speed, boolean crossDimensional) {
+        this(level, id, itemStack, spawnPos, logisticsNetworkId);
+        this.speed = speed;
+        this.crossDimensionalEnabled = crossDimensional;
+    }
+
     public static VirtualRobo deserializeNBT(ServerLevel level, CompoundTag roboTag) {
         UUID id = roboTag.getUUID("id");
         Vec3 pos = readVec3FromTag(roboTag, "pos");
         int speed = roboTag.getInt("speed");
         UUID logisticsNetworkId = roboTag.getUUID("logisticsNetworkId");
+        boolean crossDimensional = roboTag.getBoolean("crossDimensional");
 
         ItemStack itemStack = ItemStack.EMPTY;
         if (roboTag.contains("itemStack", Tag.TAG_COMPOUND)) {
@@ -63,6 +81,11 @@ public class VirtualRobo {
 
         VirtualRobo virtualRobo = new VirtualRobo(level, id, itemStack, BlockPos.containing(pos), logisticsNetworkId);
         virtualRobo.setSpeed(speed);
+        virtualRobo.setCrossDimensionalEnabled(crossDimensional);
+        if (roboTag.contains("targetDimension")) {
+            String dimString = roboTag.getString("targetDimension");
+            virtualRobo.setTargetDimension(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimString)));
+        }
         if (!virtualRobo.getItemStack().isEmpty()) {
             virtualRobo.setPackageHeightScale(1.0f);
         }
@@ -104,16 +127,35 @@ public class VirtualRobo {
         // if the target is still valid and in the correct network, do nothing
         if (target != null && target.isValid()) return;
 
-        // try finding a Player first
+        // try finding a Player first (same dimension only)
         target = PlayerTarget.fromAddress(serverLevel, targetAddress);
         if (target.isValid()) {
+            targetDimension = serverLevel.dimension();
             return;
         }
 
-        // if no player found, try finding a BeePortBlockEntity within the network
+        // if no player found, try finding a BeePortBlockEntity within the network (same dimension)
         BeePortBlockEntity targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, targetAddress, BlockPos.containing(currentPos), this, logisticsNetworkId);
         if (targetBlockEntity != null) {
             target = new BeePortBlockEntityTarget(targetBlockEntity);
+            targetDimension = serverLevel.dimension();
+            return;
+        }
+
+        // If cross-dimensional is enabled and no target found in current dimension, search other dimensions
+        if (crossDimensionalEnabled && CMPConfigs.server().enderUpgradeEnabled.get()) {
+            GlobalDronePortTracker.CrossDimensionalTarget crossDimTarget =
+                    GlobalDronePortTracker.findClosestPortAcrossDimensions(
+                            targetAddress,
+                            logisticsNetworkId,
+                            BlockPos.containing(currentPos),
+                            serverLevel.dimension()
+                    );
+
+            if (crossDimTarget != null) {
+                target = new CrossDimensionalBeePortTarget(crossDimTarget.level(), crossDimTarget.pos());
+                targetDimension = crossDimTarget.dimension();
+            }
         }
     }
 
@@ -200,6 +242,10 @@ public class VirtualRobo {
         writeVec3ToTag(tag, "pos", currentPos);
         tag.putInt("speed", speed);
         tag.putUUID("logisticsNetworkId", logisticsNetworkId);
+        tag.putBoolean("crossDimensional", crossDimensionalEnabled);
+        if (targetDimension != null) {
+            tag.putString("targetDimension", targetDimension.location().toString());
+        }
         if (!getItemStack().isEmpty()) {
             tag.put("itemStack", getItemStack().save(serverLevel.registryAccess(), new CompoundTag()));
         }
@@ -316,6 +362,44 @@ public class VirtualRobo {
     public void invalidateTarget() {
         this.targetVelocity = Vec3.ZERO;
         this.target = null;
+    }
+
+    // Cross-dimensional support methods
+    public boolean isCrossDimensionalEnabled() {
+        return crossDimensionalEnabled;
+    }
+
+    public void setCrossDimensionalEnabled(boolean enabled) {
+        this.crossDimensionalEnabled = enabled;
+    }
+
+    public @Nullable ResourceKey<Level> getTargetDimension() {
+        return targetDimension;
+    }
+
+    public void setTargetDimension(@Nullable ResourceKey<Level> dimension) {
+        this.targetDimension = dimension;
+    }
+
+    /**
+     * Checks if the robo needs to teleport to another dimension.
+     */
+    public boolean needsDimensionalTeleport() {
+        if (!crossDimensionalEnabled || targetDimension == null) {
+            return false;
+        }
+        return !serverLevel.dimension().equals(targetDimension);
+    }
+
+    /**
+     * Sets the server level (used during dimensional teleport).
+     */
+    public void setServerLevel(ServerLevel level) {
+        this.serverLevel = level;
+    }
+
+    public UUID getLogisticsNetworkId() {
+        return logisticsNetworkId;
     }
 
     public RoboRequest getRequest() {
