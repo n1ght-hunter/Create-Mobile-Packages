@@ -47,7 +47,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import static de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlock.IS_OPEN_TEXTURE;
+import static de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlock.IS_OPEN_TEXTURE;
 
 /**
  * Advanced Bee Port with upgrade slots for Speed and Ender upgrades.
