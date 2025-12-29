@@ -3,6 +3,8 @@ package de.theidler.create_mobile_packages.index;
 import com.simibubi.create.content.logistics.packagePort.PackagePortMenu;
 import com.tterrag.registrate.util.entry.MenuEntry;
 import de.theidler.create_mobile_packages.CreateMobilePackages;
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortMenu;
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortScreen;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortMenu;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortScreen;
 import de.theidler.create_mobile_packages.items.mobile_packager.*;
@@ -37,6 +39,13 @@ public class CMPMenuTypes {
                     "mobile_packager_edit_menu",
                     MobilePackagerEditMenu::new,
                     () -> MobilePackagerEditScreen::new
+            ).register();
+
+    public static final MenuEntry<PackagePortMenu> ADVANCED_BEE_PORT_MENU =
+            CreateMobilePackages.REGISTRATE.menu(
+                    "advanced_bee_port_menu",
+                    AdvancedBeePortMenu::new,
+                    () -> AdvancedBeePortScreen::new
             ).register();
 
     public static void register() {
