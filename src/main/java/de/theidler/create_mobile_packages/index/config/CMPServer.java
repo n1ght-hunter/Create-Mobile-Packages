@@ -17,6 +17,10 @@ public class CMPServer extends ConfigBase {
             Comments.displayNametag);
     public final ConfigBool allowRoboBeeSpawnPackageTransport = b(true, "allowRoboBeeSpawnPackageTransport",
             CMPServer.Comments.allowRoboBeeSpawnPackageTransport);
+    public final ConfigInt speedUpgradeMultiplier = i(2, 1, 10, "speedUpgradeMultiplier",
+            CMPServer.Comments.speedUpgradeMultiplier);
+    public final ConfigBool enderUpgradeEnabled = b(true, "enderUpgradeEnabled",
+            CMPServer.Comments.enderUpgradeEnabled);
 
     @Override
     public @NotNull String getName() {
@@ -30,5 +34,7 @@ public class CMPServer extends ConfigBase {
         static String beeMaxDistance = "The maximum distance a Robo Bee can travel. Default: -1 (unlimited)";
         static String displayNametag = "If true, the Robo Bee will display a nametag with the address of the package it is carrying. Default: true";
         static String allowRoboBeeSpawnPackageTransport = "If true, when Spawning a Robo Bee with the Item it will take any Package from the offhand and deliver it. Default: true";
+        static String speedUpgradeMultiplier = "Speed multiplier when Speed Upgrade is installed in an Advanced Bee Port. Default: 2";
+        static String enderUpgradeEnabled = "If true, the Ender Upgrade allows cross-dimensional delivery. Default: true";
     }
 }
