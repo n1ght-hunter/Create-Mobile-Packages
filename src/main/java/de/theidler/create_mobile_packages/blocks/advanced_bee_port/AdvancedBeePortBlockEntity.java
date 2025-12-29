@@ -8,7 +8,6 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 import de.theidler.create_mobile_packages.CMPHelper;
 import de.theidler.create_mobile_packages.CreateMobilePackages;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
-import de.theidler.create_mobile_packages.blocks.bee_port.DronePortTracker;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.index.CMPBlockEntities;
 import de.theidler.create_mobile_packages.index.CMPItems;
@@ -412,18 +411,9 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
-        if (level instanceof ServerLevel serverLevel) {
-            DronePortTracker tracker = DronePortTracker.get(serverLevel);
-            tracker.add(this);
-        }
     }
 
     private void invalidateTarget() {
-        if (level instanceof ServerLevel serverLevel) {
-            DronePortTracker tracker = DronePortTracker.get(serverLevel);
-            tracker.remove(this);
-        }
-
         if (level instanceof ServerLevel serverLevel) {
             RoboManager.get(serverLevel).getRoboRequests(this.getBlockPos()).forEach(roboRequest -> roboRequest.setStatus(RoboRequest.Status.CANCELLED));
         }
