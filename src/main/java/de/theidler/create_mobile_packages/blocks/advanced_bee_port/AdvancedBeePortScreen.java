@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
 public class AdvancedBeePortScreen extends PackagePortScreen {
+
     public AdvancedBeePortScreen(PackagePortMenu container, Inventory inv, Component title) {
         super(container, inv, title);
     }
@@ -23,14 +24,13 @@ public class AdvancedBeePortScreen extends PackagePortScreen {
             Component text = advancedBeePortMenu.isBeeOnTravel()
                     ? Component.translatable("create_mobile_packages.bee_port.screen.arrival_time", eta)
                     : Component.translatable("create_mobile_packages.bee_port.screen.no_bee_on_travel");
-            graphics.drawString(font, text, getGuiLeft() + 34, getGuiTop() + 64, 0x3D3C48, false);
-
-            // Render upgrade status indicators
-            if (advancedBeePortMenu.hasSpeedUpgrade()) {
-                // Could add a visual indicator that speed upgrade is active
-            }
-            if (advancedBeePortMenu.hasEnderUpgrade()) {
-                // Could add a visual indicator that ender upgrade is active
+            // Draw text with word wrap to avoid overlapping upgrade slots
+            int maxWidth = 100;
+            int x = getGuiLeft() + 34;
+            int y = getGuiTop() + 58;
+            for (var line : font.split(text, maxWidth)) {
+                graphics.drawString(font, line, x, y, 0x3D3C48, false);
+                y += font.lineHeight;
             }
         }
     }

@@ -65,9 +65,9 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
             // RoboBee slot - same position as regular BeePort
             addSlot(new BeePortBeeStackHandler(advancedBeePortBlockEntity.getRoboBeeInventory(), 0, 12, 60));
 
-            // Upgrade slots - positioned to the right of the robo bee slot
-            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 0, 12, 24, CMPItems.SPEED_UPGRADE.get()));
-            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 1, 12, 42, CMPItems.ENDER_UPGRADE.get()));
+            // Upgrade slots - positioned in the lower section, next to the bee slot
+            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 0, 140, 58, CMPItems.SPEED_UPGRADE.get()));
+            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 1, 158, 58, CMPItems.ENDER_UPGRADE.get()));
         }
     }
 
