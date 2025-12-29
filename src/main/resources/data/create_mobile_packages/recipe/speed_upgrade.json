@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    "SBS",
+    " S "
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:sugar"
+    },
+    "B": {
+      "item": "create:brass_ingot"
+    }
+  },
+  "result": {
+    "id": "create_mobile_packages:speed_upgrade",
+    "count": 1
+  }
+}
