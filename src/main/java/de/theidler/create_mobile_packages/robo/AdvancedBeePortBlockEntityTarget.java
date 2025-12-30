@@ -36,7 +36,8 @@ public class AdvancedBeePortBlockEntityTarget implements RoboTarget {
     @Override
     public boolean isValid() {
         AdvancedBeePortBlockEntity be = asAdvancedBeePortBlockEntity();
-        return be != null && !be.isRemoved() && !be.isFull();
+        // Don't check isFull() - bee should fly to port and wait if full
+        return be != null && !be.isRemoved();
     }
 
     @Override

@@ -160,11 +160,15 @@ public class VirtualRobo {
         // if the target is still valid and in the correct network, do nothing
         if (target != null && target.isValid()) return;
 
+        // Clear invalid target before searching for a new one
+        target = null;
+
         // try finding a Player first
         if (canTravelDimensions) {
             // Search across all dimensions for the player
-            target = PlayerTarget.fromAddressAcrossDimensions(serverLevel, targetAddress);
-            if (target.isValid()) {
+            PlayerTarget playerTarget = PlayerTarget.fromAddressAcrossDimensions(serverLevel, targetAddress);
+            if (playerTarget.isValid()) {
+                target = playerTarget;
                 // Set target dimension to the player's dimension
                 Player player = target.asPlayer();
                 if (player != null && player.level() instanceof net.minecraft.server.level.ServerLevel playerLevel) {
@@ -176,8 +180,9 @@ public class VirtualRobo {
             }
         } else {
             // Same dimension only
-            target = PlayerTarget.fromAddress(serverLevel, targetAddress);
-            if (target.isValid()) {
+            PlayerTarget playerTarget = PlayerTarget.fromAddress(serverLevel, targetAddress);
+            if (playerTarget.isValid()) {
+                target = playerTarget;
                 targetDimension = serverLevel.dimension();
                 return;
             }
@@ -185,16 +190,22 @@ public class VirtualRobo {
 
         // If package was delivered and we have a return address, go there
         if (itemStack.isEmpty() && returnAddress != null && !returnAddress.isBlank()) {
-            if (tryReturnToAddress()) return;
+            if (tryReturnToAddress()) {
+                return;
+            }
         }
 
         // Try to return to origin port
         if (originPortPos != null && originPortDimension != null) {
-            if (tryOriginPort()) return;
+            if (tryOriginPort()) {
+                return;
+            }
         }
 
         // Origin port not available, find closest port
-        if (tryFindPortInCurrentDimension()) return;
+        if (tryFindPortInCurrentDimension()) {
+            return;
+        }
 
         // If cross-dimensional is enabled and no target found in current dimension, search other dimensions
         if (canTravelDimensions) {
@@ -210,11 +221,12 @@ public class VirtualRobo {
         // Check if origin port is in current dimension
         if (serverLevel.dimension().equals(originPortDimension)) {
             net.minecraft.world.level.block.entity.BlockEntity originBE = serverLevel.getBlockEntity(originPortPos);
-            if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved() && abpbe.canAcceptEntity(this, !itemStack.isEmpty())) {
+            // Fly to the origin port even if full - bee will wait there
+            if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved()) {
                 target = new AdvancedBeePortBlockEntityTarget(abpbe);
                 targetDimension = serverLevel.dimension();
                 return true;
-            } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved() && bpbe.canAcceptEntity(this, !itemStack.isEmpty())) {
+            } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
                 target = new BeePortBlockEntityTarget(bpbe);
                 targetDimension = serverLevel.dimension();
                 return true;
@@ -378,6 +390,7 @@ public class VirtualRobo {
         this.serverLevel = level;
         updateEntity();
         updateTarget();
+
         if (behaviorController != null) behaviorController.tick(this);
         this.move(targetVelocity);
         updateEta();
@@ -395,17 +408,9 @@ public class VirtualRobo {
 
     private void updateEta() {
         if (request != null) {
-            // Only update ETA if we haven't arrived yet
-            // Once ETA is set to 0 (arrived) by the behavior controller, don't overwrite it
-            if (request.getEta() != 0) {
-                request.setEta(calcETA(getTargetPosition(), getCurrentPos(), speed));
-            }
+            request.setEta(calcETA(getTargetPosition(), getCurrentPos(), speed));
         } else if (target != null) {
-            // Only update ETA if we haven't arrived yet
-            // Once ETA is set to 0 (arrived) by the behavior controller, don't overwrite it
-            if (target.getETA() != 0) {
-                target.setETA(calcETA(getTargetPosition(), getCurrentPos(), speed));
-            }
+            target.setETA(calcETA(getTargetPosition(), getCurrentPos(), speed));
         }
     }
 

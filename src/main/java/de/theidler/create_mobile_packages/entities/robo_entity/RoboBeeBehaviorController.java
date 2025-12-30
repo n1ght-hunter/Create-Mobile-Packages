@@ -9,6 +9,7 @@ import de.theidler.create_mobile_packages.index.CMPItems;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.LogisticallyLinkedItem;
 import de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem;
 import de.theidler.create_mobile_packages.robo.PlayerTarget;
+import de.theidler.create_mobile_packages.CreateMobilePackages;
 import de.theidler.create_mobile_packages.toast.RemoveToastOnClientPacket;
 import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.server.level.ServerPlayer;
@@ -208,14 +209,36 @@ public class RoboBeeBehaviorController {
         Vec3 end = getBelow(port, 0.5);
         Vec3 mid = getAbove(port, 1);
         Vec3 start = getAbove(port, 2);
+        Vec3 hoverPos = getAbove(port, 3); // Hover 3 blocks above when port is full
         if (init) {
             robo.setPos(start);
             robo.setPackageHeightScale(1.0f);
             init = false;
         }
+
+        // Check if port is full - if so, hover above and wait
+        boolean portIsFull = false;
+        if (!robo.getItemStack().isEmpty()) {
+            if (port instanceof BeePortBlockEntity bpbe) {
+                portIsFull = bpbe.isFull();
+            } else if (port instanceof AdvancedBeePortBlockEntity abpbe) {
+                portIsFull = abpbe.isFull();
+            }
+        }
+
         double y = robo.getCurrentPos().y;
         double speed = (robo.getSpeed() / 20.0) / 2; // landing slower
-        if (y > mid.y + speed) {
+        if (portIsFull) {
+            // Port is full - hover at hoverPos (3 blocks above) and wait
+            if (y < hoverPos.y - speed) {
+                moveTo(robo, hoverPos, speed); // Move up to hover position
+            } else {
+                robo.setPos(hoverPos);
+                robo.setTargetVelocity(Vec3.ZERO);
+            }
+            robo.setPackageHeightScale(1.0f);
+            // Stay in LAND state and check again next tick
+        } else if (y > mid.y + speed) {
             moveTo(robo, mid, speed); // 1st part without scaling package
             robo.setPackageHeightScale(1.0f);
         } else if (y > end.y + speed) {
@@ -293,11 +316,23 @@ public class RoboBeeBehaviorController {
             return;
         }
 
+        // If bee still has a package and is at the target port, wait for the port to have room
+        // Don't go to SHUTDOWN or TAKEOFF - just wait and try again next tick
+        if (!robo.getItemStack().isEmpty() && targetPort != null) {
+            BlockPos currentBlockPos = BlockPos.containing(robo.getCurrentPos());
+            BlockPos targetBlockPos = BlockPos.containing(robo.getTargetPosition());
+            if (currentBlockPos.equals(targetBlockPos) || currentBlockPos.below().equals(targetBlockPos)) {
+                // Stay in DELIVER_PACKAGE state and try again next tick
+                return;
+            }
+        }
+
         // updating target Address with update -> creates new target if target was null
         robo.setTargetAddress(PackageItem.getAddress(robo.getItemStack()), true);
 
         // if the new target is a port and the Robo is in it then shutdown the Robo.
-        if (robo.getTarget() != null && robo.getTarget().asPortBlockEntity() != null) {
+        // Only shutdown if package was delivered (itemStack is empty)
+        if (robo.getItemStack().isEmpty() && robo.getTarget() != null && robo.getTarget().asPortBlockEntity() != null) {
             if (BlockPos.containing(robo.getCurrentPos()).equals(BlockPos.containing(robo.getTargetPosition()))) {
                 setState(RoboBeeState.SHUTDOWN);
                 return;

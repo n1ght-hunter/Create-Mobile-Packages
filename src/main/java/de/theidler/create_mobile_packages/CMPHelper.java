@@ -67,7 +67,9 @@ public class CMPHelper {
             if (address != null && !address.isEmpty()) {
                 allBEs.removeIf(dpbe -> !PackageItem.matchAddress(address, dpbe.addressFilter));
             }
-            allBEs.removeIf(dpbe -> !dpbe.canAcceptEntity(entity, (entity != null && !entity.getItemStack().isEmpty())));
+            // Note: We intentionally do NOT filter by canAcceptEntity here.
+            // The bee needs to find a target even if the port is temporarily full.
+            // The actual delivery will wait for the port to have space.
             return allBEs.stream().min(Comparator.comparingDouble(a -> a.getBlockPos().distSqr(origin))).orElse(null);
         }
         return null;
@@ -96,9 +98,7 @@ public class CMPHelper {
         if (targetPosition == null || currentPosition == null) return -1;
         if (speed <= 0) speed = CMPConfigs.server().beeSpeed.get();
         double distance = targetPosition.distanceTo(currentPosition);
-        // Round up to nearest second, but return 0 if very close (arrived)
-        if (distance < 1.0) return 0;
-        return (int) Math.ceil(distance / speed);
+        return (int) (distance / speed) + 1;
     }
 
     public static boolean doesAddressMatchPlayer(Player player, String address) {
@@ -130,7 +130,9 @@ public class CMPHelper {
             if (address != null && !address.isEmpty()) {
                 allBEs.removeIf(dpbe -> !PackageItem.matchAddress(address, dpbe.addressFilter));
             }
-            allBEs.removeIf(dpbe -> !dpbe.canAcceptEntity(entity, (entity != null && !entity.getItemStack().isEmpty())));
+            // Note: We intentionally do NOT filter by canAcceptEntity here.
+            // The bee needs to find a target even if the port is temporarily full.
+            // The actual delivery will wait for the port to have space.
             return allBEs.stream().min(Comparator.comparingDouble(a -> a.getBlockPos().distSqr(origin))).orElse(null);
         }
         return null;
