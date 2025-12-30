@@ -382,7 +382,8 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
      * @param slot      The inventory slot of the item.
      */
     private void sendDrone(ItemStack itemStack, int slot) {
-        if (!tryConsumeDrone()) {
+        ItemStack consumedBee = tryConsumeDrone();
+        if (consumedBee.isEmpty()) {
             if (!hasRoboRequest() && level != null) {
                 requestRoboEntity();
                 return;
@@ -391,7 +392,7 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
         }
         roboSendCooldown = 2;
         if (level instanceof ServerLevel serverLevel) {
-            RoboManager.get(serverLevel).newRobo(serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(), 0);
+            RoboManager.get(serverLevel).newRobo(serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(), 0, true, addressFilter, null);
         }
         inventory.setStackInSlot(slot, ItemStack.EMPTY);
     }
@@ -399,11 +400,10 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
     /**
      * Tries to remove a drone from the inventory.
      *
-     * @return whether a drone was available
+     * @return the consumed bee ItemStack, or EMPTY if none available
      */
-    private boolean tryConsumeDrone() {
-        ItemStack usedBee = roboBeeInventory.extractItem(0, 1, false);
-        return !usedBee.isEmpty();
+    private ItemStack tryConsumeDrone() {
+        return roboBeeInventory.extractItem(0, 1, false);
     }
 
     /**
@@ -573,7 +573,8 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
     }
 
     public void handleRequest(RoboRequest request) {
-        if (!tryConsumeDrone()) return; // return if there is no bee available
+        ItemStack consumedBee = tryConsumeDrone();
+        if (consumedBee.isEmpty()) return; // return if there is no bee available
         request.setStatus(RoboRequest.Status.IN_PROGRESS);
         roboSendCooldown = 2;
         if (level instanceof ServerLevel serverLevel) {

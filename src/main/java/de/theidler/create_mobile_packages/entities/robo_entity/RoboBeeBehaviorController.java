@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -107,7 +108,7 @@ public class RoboBeeBehaviorController {
         }
 
         if (robo.getTarget() != null) {
-            robo.getTarget().setETA(calcETA(robo.getTargetPosition(), robo.getCurrentPos()));
+            robo.getTarget().setETA(calcETA(robo.getTargetPosition(), robo.getCurrentPos(), robo.getSpeed()));
             if (robo.getTarget() instanceof PlayerTarget playerTarget)
                 playerTarget.updateEtaToast(robo);
         }
@@ -128,7 +129,7 @@ public class RoboBeeBehaviorController {
      * Teleports the robo to the target dimension and transfers it to that dimension's RoboManager.
      */
     private void handleDimensionalTeleport(VirtualRobo robo) {
-        if (!robo.isCrossDimensionalEnabled()) {
+        if (!robo.canTravelDimensions()) {
             setState(RoboBeeState.NAVIGATE_TO_TARGET);
             return;
         }
@@ -218,17 +219,20 @@ public class RoboBeeBehaviorController {
 
     private void handleDeliverPackage(VirtualRobo robo) {
         boolean delivered = false;
+        // Store target info before delivery (in case we need it after invalidation)
+        Player targetPlayer = robo.getTarget() != null ? robo.getTarget().asPlayer() : null;
+        BlockEntity targetPort = robo.getTarget() != null ? robo.getTarget().asPortBlockEntity() : null;
+
         // Try to deliver to player
-        if (robo.getTarget() != null && robo.getTarget().asPlayer() != null && !robo.getItemStack().isEmpty()) {
-            delivered = BeePortBlockEntity.sendPackageToPlayer(robo.getTarget().asPlayer(), robo.getItemStack());
+        if (targetPlayer != null && !robo.getItemStack().isEmpty()) {
+            delivered = BeePortBlockEntity.sendPackageToPlayer(targetPlayer, robo.getItemStack());
             if (delivered) {
                 robo.setItemStack(ItemStack.EMPTY);
                 robo.invalidateTarget();
             }
         }
         // Try to deliver to block entity (BeePort or AdvancedBeePort)
-        if (robo.getTarget() != null && !delivered && robo.getTarget().asPortBlockEntity() != null && !robo.getItemStack().isEmpty()) {
-            BlockEntity targetPort = robo.getTarget().asPortBlockEntity();
+        if (!delivered && targetPort != null && !robo.getItemStack().isEmpty()) {
             if (targetPort instanceof BeePortBlockEntity bpbe) {
                 delivered = bpbe.addItemStack(robo.getItemStack());
             } else if (targetPort instanceof AdvancedBeePortBlockEntity abpbe) {
@@ -238,6 +242,90 @@ public class RoboBeeBehaviorController {
                 robo.setItemStack(ItemStack.EMPTY);
                 robo.invalidateTarget();
             }
+        }
+
+        // If package was delivered and return-to-sender is enabled, return bee to sender (player)
+        // Only applies to player-sent bees (no origin port) - port-sent bees should fly back to their origin port
+        if (robo.getItemStack().isEmpty() && targetPlayer != null && robo.isBeeReturnToSender() && !robo.hasOriginPort()) {
+            java.util.UUID beeFrequency = robo.getBeeFrequency();
+
+            // Try to find and stack with an existing matching bee in the player's inventory
+            boolean stacked = false;
+            for (int i = 0; i < targetPlayer.getInventory().getContainerSize(); i++) {
+                ItemStack invStack = targetPlayer.getInventory().getItem(i);
+                if (invStack.getItem() instanceof de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem) {
+                    // Check if settings match (return-to-sender mode and frequency)
+                    boolean invReturnToSender = de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem.isReturnToSender(invStack);
+                    java.util.UUID invFrequency = de.theidler.create_mobile_packages.items.portable_stock_ticker.LogisticallyLinkedItem.networkFromStack(invStack);
+                    boolean frequenciesMatch = (beeFrequency == null && invFrequency == null) || (beeFrequency != null && beeFrequency.equals(invFrequency));
+                    if (invReturnToSender && frequenciesMatch && invStack.getCount() < invStack.getMaxStackSize()) {
+                        invStack.grow(1);
+                        stacked = true;
+                        break;
+                    }
+                }
+            }
+
+            // If couldn't stack, create a new bee with the correct settings
+            if (!stacked) {
+                ItemStack beeStack = new ItemStack(de.theidler.create_mobile_packages.index.CMPItems.ROBO_BEE.get());
+                de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem.setReturnToSender(beeStack, true);
+                // Set frequency if the original bee was tuned
+                if (beeFrequency != null) {
+                    net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+                    tag.putUUID("Freq", beeFrequency);
+                    beeStack.set(de.theidler.create_mobile_packages.index.CMPDataComponents.CMP_FREQ, net.minecraft.world.item.component.CustomData.of(tag));
+                }
+                targetPlayer.getInventory().placeItemBackInInventory(beeStack);
+            }
+
+            robo.setRemoved(robo.getServerLevel());
+            return;
+        }
+
+        // If package was delivered and return-to-sender is false, bee goes into the delivery location's inventory
+        if (robo.getItemStack().isEmpty() && !robo.isBeeReturnToSender()) {
+            // If delivered to a port, add bee to that port's inventory
+            if (targetPort != null) {
+                if (targetPort instanceof BeePortBlockEntity bpbe) {
+                    bpbe.addBeeToRoboBeeInventory(1);
+                } else if (targetPort instanceof AdvancedBeePortBlockEntity abpbe) {
+                    abpbe.addBeeToRoboBeeInventory(1);
+                }
+            }
+            // If delivered to a player, add bee to player's inventory
+            else if (targetPlayer != null) {
+                java.util.UUID beeFrequency = robo.getBeeFrequency();
+
+                // Try to find and stack with an existing matching bee (return-to-sender false, same frequency)
+                boolean stacked = false;
+                for (int i = 0; i < targetPlayer.getInventory().getContainerSize(); i++) {
+                    ItemStack invStack = targetPlayer.getInventory().getItem(i);
+                    if (invStack.getItem() instanceof de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem) {
+                        boolean invReturnToSender = de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem.isReturnToSender(invStack);
+                        java.util.UUID invFrequency = de.theidler.create_mobile_packages.items.portable_stock_ticker.LogisticallyLinkedItem.networkFromStack(invStack);
+                        boolean frequenciesMatch = (beeFrequency == null && invFrequency == null) || (beeFrequency != null && beeFrequency.equals(invFrequency));
+                        if (!invReturnToSender && frequenciesMatch && invStack.getCount() < invStack.getMaxStackSize()) {
+                            invStack.grow(1);
+                            stacked = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!stacked) {
+                    ItemStack beeStack = new ItemStack(de.theidler.create_mobile_packages.index.CMPItems.ROBO_BEE.get());
+                    // return-to-sender stays false
+                    if (beeFrequency != null) {
+                        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+                        tag.putUUID("Freq", beeFrequency);
+                        beeStack.set(de.theidler.create_mobile_packages.index.CMPDataComponents.CMP_FREQ, net.minecraft.world.item.component.CustomData.of(tag));
+                    }
+                    targetPlayer.getInventory().placeItemBackInInventory(beeStack);
+                }
+            }
+            robo.setRemoved(robo.getServerLevel());
+            return;
         }
 
         // updating target Address with update -> creates new target if target was null

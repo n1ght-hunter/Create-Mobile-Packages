@@ -41,7 +41,6 @@ public class RoboManager extends SavedData {
     public static RoboManager load(CompoundTag tag, ServerLevel level) {
         RoboManager manager = new RoboManager();
 
-        // Load robos
         ListTag robosList = tag.getList("robos", Tag.TAG_COMPOUND);
         for (int i = 0; i < robosList.size(); i++) {
             CompoundTag roboTag = robosList.getCompound(i);
@@ -75,7 +74,6 @@ public class RoboManager extends SavedData {
     public void tick(ServerLevel level) {
         robos.values().forEach(robo -> robo.tick(level));
         getPendingRoboRequests().forEach(roboRequest -> tryHandlingRequest(roboRequest, level));
-        // prune finished requests older than a minute to avoid unbounded growth
         long now = System.currentTimeMillis();
         beePortRoboRequests.removeIf(r -> (r.getStatus() == RoboRequest.Status.DONE || r.getStatus() == RoboRequest.Status.CANCELLED) && (now - r.getCreatedAt()) > 60_000);
         this.setDirty();
@@ -91,24 +89,31 @@ public class RoboManager extends SavedData {
     }
 
     public UUID newRobo(ServerLevel level, ItemStack itemStack, BlockPos spawnPos, UUID logisticsNetworkId, float packageHeightScale) {
+        return newRobo(level, itemStack, spawnPos, logisticsNetworkId, packageHeightScale, false, null, null);
+    }
+
+    public UUID newRobo(ServerLevel level, ItemStack itemStack, BlockPos spawnPos, UUID logisticsNetworkId,
+                        float packageHeightScale, boolean beeReturnToSender,
+                        @Nullable String returnAddress, @Nullable UUID beeFrequency) {
         UUID id = UUID.randomUUID();
-        VirtualRobo robo = new VirtualRobo(level, id, itemStack, spawnPos, logisticsNetworkId);
+        VirtualRobo robo = new VirtualRobo(level, id, itemStack, spawnPos, logisticsNetworkId, returnAddress);
         robo.setPackageHeightScale(packageHeightScale);
+        robo.setBeeReturnToSender(beeReturnToSender);
+        robo.setBeeFrequency(beeFrequency);
         this.add(robo);
         setDirty();
         return id;
     }
 
-    /**
-     * Creates a new advanced robo with custom speed and cross-dimensional capability.
-     * Used by Advanced Bee Port with upgrades.
-     */
     public UUID newAdvancedRobo(ServerLevel level, ItemStack itemStack, BlockPos spawnPos,
                                  UUID logisticsNetworkId, float packageHeightScale,
-                                 int speed, boolean crossDimensional) {
+                                 int speed, boolean crossDimensional, boolean beeReturnToSender,
+                                 @Nullable String returnAddress, @Nullable UUID beeFrequency) {
         UUID id = UUID.randomUUID();
-        VirtualRobo robo = new VirtualRobo(level, id, itemStack, spawnPos, logisticsNetworkId, speed, crossDimensional);
+        VirtualRobo robo = new VirtualRobo(level, id, itemStack, spawnPos, logisticsNetworkId, speed, crossDimensional, returnAddress);
         robo.setPackageHeightScale(packageHeightScale);
+        robo.setBeeReturnToSender(beeReturnToSender);
+        robo.setBeeFrequency(beeFrequency);
         this.add(robo);
         setDirty();
         return id;
@@ -116,7 +121,7 @@ public class RoboManager extends SavedData {
 
     public void newRequestRobo(ServerLevel level, BlockPos spawnPos, RoboRequest request) {
         UUID id = UUID.randomUUID();
-        VirtualRobo robo = new VirtualRobo(level, id, ItemStack.EMPTY, spawnPos, request.getLogisticsNetworkId());
+        VirtualRobo robo = new VirtualRobo(level, id, ItemStack.EMPTY, spawnPos, request.getLogisticsNetworkId(), null);
         robo.setRequest(request);
         this.add(robo);
         setDirty();
@@ -151,7 +156,6 @@ public class RoboManager extends SavedData {
 
     public List<Integer> getETAs(BlockPos pos) {
         List<Integer> eta = new ArrayList<>();
-        // add eta for 2 sources
         getRoboRequests(pos).stream().map(RoboRequest::getEta).forEach(eta::add);
         getInboundRobo(pos).stream().map(robo -> {
             RoboTarget target = robo.getTarget();

@@ -1,14 +1,16 @@
 package de.theidler.create_mobile_packages.robo;
 
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A RoboTarget that points to a BeePortBlockEntity in another dimension.
+ * A RoboTarget that points to a BeePortBlockEntity or AdvancedBeePortBlockEntity in another dimension.
  * Used by the Ender Upgrade for cross-dimensional delivery.
  */
 public class CrossDimensionalBeePortTarget implements RoboTarget {
@@ -36,14 +38,29 @@ public class CrossDimensionalBeePortTarget implements RoboTarget {
     }
 
     @Override
+    public BlockEntity asPortBlockEntity() {
+        if (level == null) return null;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) {
+            return be;
+        }
+        return null;
+    }
+
+    @Override
     public BlockPos asBlockPos() {
         return pos;
     }
 
     @Override
     public boolean isValid() {
-        BeePortBlockEntity be = asBeePortBlockEntity();
-        return be != null && !be.isRemoved() && !be.isFull();
+        BlockEntity be = asPortBlockEntity();
+        if (be instanceof BeePortBlockEntity bpbe) {
+            return !bpbe.isRemoved() && !bpbe.isFull();
+        } else if (be instanceof AdvancedBeePortBlockEntity abpbe) {
+            return !abpbe.isRemoved() && !abpbe.isFull();
+        }
+        return false;
     }
 
     @Override

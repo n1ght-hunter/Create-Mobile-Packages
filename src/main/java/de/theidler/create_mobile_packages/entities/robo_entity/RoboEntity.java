@@ -15,6 +15,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -89,10 +90,24 @@ public class RoboEntity extends Mob {
         } else if (virtualRobo.getTargetAddress() != null && !virtualRobo.getTargetAddress().isBlank()) {
             setCustomName(Component.literal("-> " + virtualRobo.getTargetAddress()));
             setCustomNameVisible(true);
-        } else if (virtualRobo.getTarget() != null && virtualRobo.getTarget().asBeePortBlockEntity() != null) {
-            BlockPos pos = virtualRobo.getTarget().asBeePortBlockEntity().getBlockPos();
+        } else if (virtualRobo.getTarget() != null && virtualRobo.getTarget().asPlayer() != null) {
+            // Returning to player
+            setCustomName(Component.literal("-> " + virtualRobo.getTarget().asPlayer().getName().getString()));
+            setCustomNameVisible(true);
+        } else if (virtualRobo.getTarget() != null && virtualRobo.getTarget().asPortBlockEntity() != null) {
+            BlockPos pos = virtualRobo.getTarget().asPortBlockEntity().getBlockPos();
             setCustomName(Component.literal("-> [" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "]"));
             setCustomNameVisible(true);
+        } else if (virtualRobo.getTarget() != null && virtualRobo.getTarget().isValid()) {
+            // Has a valid target but we don't know what type - just show coordinates
+            Vec3 targetPos = virtualRobo.getTarget().getTargetPos();
+            if (targetPos != null) {
+                setCustomName(Component.literal("-> [" + (int)targetPos.x + ", " + (int)targetPos.y + ", " + (int)targetPos.z + "]"));
+                setCustomNameVisible(true);
+            } else {
+                setCustomName(Component.translatable("entity.create_mobile_packages.robo_bee.no_valid_target"));
+                setCustomNameVisible(true);
+            }
         } else {
             setCustomName(Component.translatable("entity.create_mobile_packages.robo_bee.no_valid_target"));
             setCustomNameVisible(true);

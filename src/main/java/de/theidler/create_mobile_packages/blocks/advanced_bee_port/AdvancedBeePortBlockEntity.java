@@ -20,7 +20,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -59,14 +58,28 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
     private final ItemStackHandler upgradeInventory = new ItemStackHandler(2) {
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-            if (slot == 0) return stack.getItem() instanceof SpeedUpgradeItem;
-            if (slot == 1) return stack.getItem() instanceof EnderUpgradeItem;
-            return false;
+            return stack.getItem() instanceof SpeedUpgradeItem || stack.getItem() instanceof EnderUpgradeItem;
         }
 
         @Override
         public int getSlotLimit(int slot) {
-            return 1; // Only one upgrade per slot
+            return 8;
+        }
+
+        @Override
+        public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (stack.getItem() instanceof EnderUpgradeItem) {
+                if (!getStackInSlot(slot).isEmpty()) {
+                    return stack;
+                }
+                ItemStack toInsert = stack.copyWithCount(1);
+                ItemStack result = super.insertItem(slot, toInsert, simulate);
+                if (result.isEmpty()) {
+                    return stack.getCount() > 1 ? stack.copyWithCount(stack.getCount() - 1) : ItemStack.EMPTY;
+                }
+                return stack;
+            }
+            return super.insertItem(slot, stack, simulate);
         }
     };
 
@@ -136,10 +149,8 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         public boolean isItemValid(int slot, ItemStack stack) {
             if (stack.getItem() instanceof RoboBeeItem) {
                 return slot >= inventory.getSlots() && slot < inventory.getSlots() + roboBeeInventory.getSlots();
-            } else if (stack.getItem() instanceof SpeedUpgradeItem) {
-                return slot == inventory.getSlots() + roboBeeInventory.getSlots();
-            } else if (stack.getItem() instanceof EnderUpgradeItem) {
-                return slot == inventory.getSlots() + roboBeeInventory.getSlots() + 1;
+            } else if (stack.getItem() instanceof SpeedUpgradeItem || stack.getItem() instanceof EnderUpgradeItem) {
+                return slot >= inventory.getSlots() + roboBeeInventory.getSlots();
             } else {
                 return slot < inventory.getSlots() && inventory.isItemValid(slot, stack);
             }
@@ -149,6 +160,7 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
     public LogisticallyLinkedBehaviour behaviour;
     private int tickCounter = 0;
     private int roboSendCooldown = 0;
+    private boolean returnToSender = true;
 
     public AdvancedBeePortBlockEntity(BlockEntityType<?> pType, BlockPos pPos, BlockState pBlockState) {
         super(pType, pPos, pBlockState);
@@ -162,21 +174,39 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         );
     }
 
-    // Upgrade helper methods
     public boolean hasSpeedUpgrade() {
-        return !upgradeInventory.getStackInSlot(0).isEmpty();
+        return getSpeedUpgradeCount() > 0;
     }
 
     public boolean hasEnderUpgrade() {
-        return !upgradeInventory.getStackInSlot(1).isEmpty();
+        for (int i = 0; i < upgradeInventory.getSlots(); i++) {
+            ItemStack stack = upgradeInventory.getStackInSlot(i);
+            if (stack.getItem() instanceof EnderUpgradeItem) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public int getEffectiveSpeed() {
         int baseSpeed = CMPConfigs.server().beeSpeed.get();
-        if (hasSpeedUpgrade()) {
-            return baseSpeed * CMPConfigs.server().speedUpgradeMultiplier.get();
+        int speedUpgradeCount = getSpeedUpgradeCount();
+        if (speedUpgradeCount > 0) {
+            int multiplier = CMPConfigs.server().speedUpgradeMultiplier.get();
+            return baseSpeed * multiplier * speedUpgradeCount;
         }
         return baseSpeed;
+    }
+
+    public int getSpeedUpgradeCount() {
+        int count = 0;
+        for (int i = 0; i < upgradeInventory.getSlots(); i++) {
+            ItemStack stack = upgradeInventory.getStackInSlot(i);
+            if (stack.getItem() instanceof SpeedUpgradeItem) {
+                count += stack.getCount();
+            }
+        }
+        return count;
     }
 
     public boolean isCrossDimensionalEnabled() {
@@ -187,7 +217,22 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         return upgradeInventory;
     }
 
-    // Static methods
+    public boolean isReturnToSender() {
+        return returnToSender;
+    }
+
+    public void setReturnToSender(boolean returnToSender) {
+        this.returnToSender = returnToSender;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public void toggleReturnToSender() {
+        setReturnToSender(!returnToSender);
+    }
+
     public static void setOpen(AdvancedBeePortBlockEntity entity, boolean open) {
         if (entity == null || entity.level == null) return;
         if (entity.isRemoved()) return;
@@ -206,6 +251,7 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         super.write(tag, registries, clientPacket);
         tag.put("RoboBeeInventory", roboBeeInventory.serializeNBT(registries));
         tag.put("UpgradeInventory", upgradeInventory.serializeNBT(registries));
+        tag.putBoolean("ReturnToSender", returnToSender);
     }
 
     @Override
@@ -216,6 +262,9 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         }
         if (tag.contains("UpgradeInventory")) {
             upgradeInventory.deserializeNBT(registries, tag.getCompound("UpgradeInventory"));
+        }
+        if (tag.contains("ReturnToSender")) {
+            returnToSender = tag.getBoolean("ReturnToSender");
         }
     }
 
@@ -390,7 +439,8 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
      * Sends an advanced drone with upgrade capabilities.
      */
     private void sendAdvancedDrone(ItemStack itemStack, int slot) {
-        if (!tryConsumeDrone()) {
+        ItemStack consumedBee = tryConsumeDrone();
+        if (consumedBee.isEmpty()) {
             if (!hasRoboRequest() && level != null) {
                 requestRoboEntity();
                 return;
@@ -399,23 +449,15 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         }
         roboSendCooldown = 2;
         if (level instanceof ServerLevel serverLevel) {
-            // Use the advanced robo creation with speed and cross-dimensional support
             RoboManager.get(serverLevel).newAdvancedRobo(
-                    serverLevel,
-                    itemStack,
-                    this.getBlockPos(),
-                    this.getLogisticsNetworkId(),
-                    0,
-                    getEffectiveSpeed(),
-                    isCrossDimensionalEnabled()
-            );
+                    serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(),
+                    0, getEffectiveSpeed(), isCrossDimensionalEnabled(), returnToSender, addressFilter, null);
         }
         inventory.setStackInSlot(slot, ItemStack.EMPTY);
     }
 
-    private boolean tryConsumeDrone() {
-        ItemStack usedBee = roboBeeInventory.extractItem(0, 1, false);
-        return !usedBee.isEmpty();
+    private ItemStack tryConsumeDrone() {
+        return roboBeeInventory.extractItem(0, 1, false);
     }
 
     public boolean addItemStack(ItemStack itemStack) {
@@ -545,20 +587,14 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
     }
 
     public void handleRequest(RoboRequest request) {
-        if (!tryConsumeDrone()) return;
+        ItemStack consumedBee = tryConsumeDrone();
+        if (consumedBee.isEmpty()) return;
         request.setStatus(RoboRequest.Status.IN_PROGRESS);
         roboSendCooldown = 2;
         if (level instanceof ServerLevel serverLevel) {
-            // Use advanced robo for requests too
             RoboManager.get(serverLevel).newAdvancedRobo(
-                    serverLevel,
-                    ItemStack.EMPTY,
-                    this.getBlockPos(),
-                    request.getLogisticsNetworkId(),
-                    0,
-                    getEffectiveSpeed(),
-                    isCrossDimensionalEnabled()
-            );
+                    serverLevel, ItemStack.EMPTY, this.getBlockPos(), request.getLogisticsNetworkId(),
+                    0, getEffectiveSpeed(), isCrossDimensionalEnabled(), returnToSender, addressFilter, null);
         }
     }
 }
