@@ -453,12 +453,9 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
      */
     private void invalidateTarget() {
         if (level instanceof ServerLevel serverLevel) {
-            DronePortTracker tracker = DronePortTracker.get(serverLevel);
-            tracker.remove(this);
-        }
-
-        if (level instanceof ServerLevel serverLevel) {
-            RoboManager.get(serverLevel).getRoboRequests(this.getBlockPos()).forEach(roboRequest -> roboRequest.setStatus(RoboRequest.Status.CANCELLED));
+            DronePortTracker.get(serverLevel).remove(this);
+            RoboManager.get(serverLevel).getRoboRequests(this.getBlockPos())
+                    .forEach(roboRequest -> roboRequest.setStatus(RoboRequest.Status.CANCELLED));
         }
     }
 

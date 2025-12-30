@@ -374,7 +374,7 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         // Check players in current dimension first
         for (Player player : level.players()) {
             if (CMPHelper.doesAddressMatchPlayer(player, address) && CMPHelper.isWithinRange(player.blockPosition(), this.getBlockPos())) {
-                sendToPlayer(player, itemStack, slot);
+                sendToPlayer(itemStack, slot);
                 return;
             }
         }
@@ -385,7 +385,7 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
                 if (otherLevel == level) continue; // Already checked this dimension
                 for (Player player : otherLevel.players()) {
                     if (CMPHelper.doesAddressMatchPlayer(player, address)) {
-                        sendToPlayerCrossDimensional(player, itemStack, slot);
+                        sendToPlayer(itemStack, slot);
                         return;
                     }
                 }
@@ -400,22 +400,7 @@ public class AdvancedBeePortBlockEntity extends PackagePortBlockEntity {
         }
     }
 
-    /**
-     * Sends a package to a player in a different dimension.
-     */
-    private void sendToPlayerCrossDimensional(Player player, ItemStack itemStack, int slot) {
-        if (roboBeeInventory.getStackInSlot(0).getCount() <= 0) {
-            if (!hasRoboRequest() && level != null) {
-                requestRoboEntity();
-                return;
-            }
-            return;
-        }
-        roboSendCooldown = 2;
-        sendAdvancedDrone(itemStack, slot);
-    }
-
-    private void sendToPlayer(Player player, ItemStack itemStack, int slot) {
+    private void sendToPlayer(ItemStack itemStack, int slot) {
         if (roboBeeInventory.getStackInSlot(0).getCount() <= 0) {
             if (!hasRoboRequest() && level != null) {
                 requestRoboEntity();
