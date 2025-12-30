@@ -59,5 +59,18 @@
     "item.create_mobile_packages.mobile_packager.tooltip.condition1": "使用时",
     "item.create_mobile_packages.mobile_packager.tooltip.behaviour1": "打开创建包裹界面",
     "item.create_mobile_packages.mobile_packager.tooltip.condition2": "潜行并使用时",
-    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "打开编辑包裹界面"
+    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "打开编辑包裹界面",
+    "block.create_mobile_packages.advanced_bee_port": "高级运输蜂停泊港",
+    "item.create_mobile_packages.advanced_bee_port": "高级运输蜂停泊港",
+    "item.create_mobile_packages.speed_upgrade": "速度升级",
+    "item.create_mobile_packages.speed_upgrade.tooltip": "将运输蜂速度提高%1$sx",
+    "item.create_mobile_packages.ender_upgrade": "末影升级",
+    "item.create_mobile_packages.ender_upgrade.tooltip": "允许运输蜂在维度之间传送",
+    "message.create_mobile_packages.robo_bee.return_to_sender_enabled": "返回发送者: 已启用",
+    "message.create_mobile_packages.robo_bee.return_to_sender_disabled": "返回发送者: 已禁用",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_enabled": "返回发送者: 已启用",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_disabled": "返回发送者: 已禁用",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_hint": "潜行 + 右键切换",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.enabled": "返回发送者: 已启用 (点击禁用)",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.disabled": "返回发送者: 已禁用 (点击启用)"
 }

@@ -59,5 +59,18 @@
     "item.create_mobile_packages.mobile_packager.tooltip.condition1": "Quando usado",
     "item.create_mobile_packages.mobile_packager.tooltip.behaviour1": "Abre um menu para criar Pacotes",
     "item.create_mobile_packages.mobile_packager.tooltip.condition2": "Quando a furtividade é usada",
-    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "Abre um menu para modificar Pacotes"
+    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "Abre um menu para modificar Pacotes",
+    "block.create_mobile_packages.advanced_bee_port": "Porto de Abelhas Robô Avançado",
+    "item.create_mobile_packages.advanced_bee_port": "Porto de Abelhas Robô Avançado",
+    "item.create_mobile_packages.speed_upgrade": "Melhoria de Velocidade",
+    "item.create_mobile_packages.speed_upgrade.tooltip": "Aumenta a velocidade da Abelha Robô em %1$sx",
+    "item.create_mobile_packages.ender_upgrade": "Melhoria do Ender",
+    "item.create_mobile_packages.ender_upgrade.tooltip": "Permite que as Abelhas Robô viajem entre dimensões",
+    "message.create_mobile_packages.robo_bee.return_to_sender_enabled": "Retornar ao Remetente: Ativado",
+    "message.create_mobile_packages.robo_bee.return_to_sender_disabled": "Retornar ao Remetente: Desativado",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_enabled": "Retornar ao Remetente: Ativado",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_disabled": "Retornar ao Remetente: Desativado",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_hint": "Furtividade + Clique direito para alternar",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.enabled": "Retornar ao Remetente: Ativado (Clique para desativar)",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.disabled": "Retornar ao Remetente: Desativado (Clique para ativar)"
 }

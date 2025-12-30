@@ -65,5 +65,15 @@
   "item.create_mobile_packages.speed_upgrade": "Speed Upgrade",
   "item.create_mobile_packages.speed_upgrade.tooltip": "Increases Robo Bee speed by %1$sx",
   "item.create_mobile_packages.ender_upgrade": "Ender Upgrade",
-  "item.create_mobile_packages.ender_upgrade.tooltip": "Allows Robo Bees to travel between dimensions"
+  "item.create_mobile_packages.ender_upgrade.tooltip": "Allows Robo Bees to travel between dimensions",
+  "message.create_mobile_packages.robo_bee.return_to_sender_enabled": "Return to Sender: Enabled",
+  "message.create_mobile_packages.robo_bee.return_to_sender_disabled": "Return to Sender: Disabled",
+  "tooltip.create_mobile_packages.robo_bee.return_to_sender_enabled": "Return to Sender: Enabled",
+  "tooltip.create_mobile_packages.robo_bee.return_to_sender_disabled": "Return to Sender: Disabled",
+  "tooltip.create_mobile_packages.robo_bee.return_to_sender_hint": "Sneak + Scroll to toggle",
+  "message.create_mobile_packages.robo_bee.no_package": "Hold a Package in your offhand to spawn the Robo Bee",
+  "message.create_mobile_packages.robo_bee.transport_disabled": "Package transport via spawn is disabled",
+  "message.create_mobile_packages.robo_bee.target_unreachable": "No valid target found for this package address",
+  "create_mobile_packages.advanced_bee_port.return_to_sender.enabled": "Return to Sender: Enabled (Click to disable)",
+  "create_mobile_packages.advanced_bee_port.return_to_sender.disabled": "Return to Sender: Disabled (Click to enable)"
 }

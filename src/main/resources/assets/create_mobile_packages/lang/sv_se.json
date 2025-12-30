@@ -59,5 +59,18 @@
     "item.create_mobile_packages.mobile_packager.tooltip.condition1": "When used",
     "item.create_mobile_packages.mobile_packager.tooltip.behaviour1": "Opens a menu to create Packages",
     "item.create_mobile_packages.mobile_packager.tooltip.condition2": "When sneak used",
-    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "Opens a menu to modify Packages"
+    "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "Opens a menu to modify Packages",
+    "block.create_mobile_packages.advanced_bee_port": "Avancerad Robot Bi Port",
+    "item.create_mobile_packages.advanced_bee_port": "Avancerad Robot Bi Port",
+    "item.create_mobile_packages.speed_upgrade": "Hastighetsuppgradering",
+    "item.create_mobile_packages.speed_upgrade.tooltip": "Ökar Robot Biets hastighet med %1$sx",
+    "item.create_mobile_packages.ender_upgrade": "Ender-uppgradering",
+    "item.create_mobile_packages.ender_upgrade.tooltip": "Tillåter Robot Bin att resa mellan dimensioner",
+    "message.create_mobile_packages.robo_bee.return_to_sender_enabled": "Returnera till avsändare: Aktiverad",
+    "message.create_mobile_packages.robo_bee.return_to_sender_disabled": "Returnera till avsändare: Inaktiverad",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_enabled": "Returnera till avsändare: Aktiverad",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_disabled": "Returnera till avsändare: Inaktiverad",
+    "tooltip.create_mobile_packages.robo_bee.return_to_sender_hint": "Smyg + Högerklick för att växla",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.enabled": "Returnera till avsändare: Aktiverad (Klicka för att inaktivera)",
+    "create_mobile_packages.advanced_bee_port.return_to_sender.disabled": "Returnera till avsändare: Inaktiverad (Klicka för att aktivera)"
 }
