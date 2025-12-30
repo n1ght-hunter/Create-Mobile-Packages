@@ -74,15 +74,29 @@ public class CMPHelper {
     }
 
     /**
-     * Calculates the estimated time of arrival (ETA) to the specified targetPosition.
+     * Calculates the estimated time of arrival (ETA) to the specified targetPosition using default bee speed.
      *
      * @param targetPosition The Vec3 to calculate the ETA for.
+     * @param currentPosition The current position.
      * @return The ETA in seconds.
      */
     public static int calcETA(Vec3 targetPosition, Vec3 currentPosition) {
+        return calcETA(targetPosition, currentPosition, CMPConfigs.server().beeSpeed.get());
+    }
+
+    /**
+     * Calculates the estimated time of arrival (ETA) to the specified targetPosition with custom speed.
+     *
+     * @param targetPosition The Vec3 to calculate the ETA for.
+     * @param currentPosition The current position.
+     * @param speed The speed of the bee (blocks per second).
+     * @return The ETA in seconds.
+     */
+    public static int calcETA(Vec3 targetPosition, Vec3 currentPosition, int speed) {
         if (targetPosition == null || currentPosition == null) return -1;
+        if (speed <= 0) speed = CMPConfigs.server().beeSpeed.get();
         double distance = targetPosition.distanceTo(currentPosition);
-        return (int) (distance / CMPConfigs.server().beeSpeed.get()) + 1;
+        return (int) (distance / speed) + 1;
     }
 
     public static boolean doesAddressMatchPlayer(Player player, String address) {
