@@ -54,6 +54,7 @@ public class CreateMobilePackages
         CMPEntities.register();
         CMPDisplaySources.register();
         CMPDataComponents.register(modEventBus);
+        CMPRecipeSerializers.register(modEventBus);
         CMPToasts.registerAll();
 
     }
