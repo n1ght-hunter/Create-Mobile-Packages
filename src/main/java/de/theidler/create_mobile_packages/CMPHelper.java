@@ -96,7 +96,9 @@ public class CMPHelper {
         if (targetPosition == null || currentPosition == null) return -1;
         if (speed <= 0) speed = CMPConfigs.server().beeSpeed.get();
         double distance = targetPosition.distanceTo(currentPosition);
-        return (int) (distance / speed) + 1;
+        // Round up to nearest second, but return 0 if very close (arrived)
+        if (distance < 1.0) return 0;
+        return (int) Math.ceil(distance / speed);
     }
 
     public static boolean doesAddressMatchPlayer(Player player, String address) {

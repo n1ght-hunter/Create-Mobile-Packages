@@ -162,7 +162,8 @@ public class RoboManager extends SavedData {
             if (target != null) return target.getETA();
             return -1;
         }).forEach(eta::add);
-        return eta.stream().filter(integer -> integer >= 0).toList();
+        // Filter out invalid ETAs (-1) and arrived ETAs (0)
+        return eta.stream().filter(integer -> integer > 0).toList();
     }
 
     private void init() {

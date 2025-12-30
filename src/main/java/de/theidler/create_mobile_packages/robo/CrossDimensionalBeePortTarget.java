@@ -17,7 +17,7 @@ public class CrossDimensionalBeePortTarget implements RoboTarget {
     private final BlockPos pos;
     private final ServerLevel level;
     private final ResourceKey<Level> dimension;
-    private int eta;
+    private int eta = -1;
 
     public CrossDimensionalBeePortTarget(ServerLevel level, BlockPos pos) {
         this.pos = pos;

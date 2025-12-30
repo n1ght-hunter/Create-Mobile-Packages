@@ -395,9 +395,17 @@ public class VirtualRobo {
 
     private void updateEta() {
         if (request != null) {
-            request.setEta(calcETA(getTargetPosition(), getCurrentPos(), speed));
+            // Only update ETA if we haven't arrived yet
+            // Once ETA is set to 0 (arrived) by the behavior controller, don't overwrite it
+            if (request.getEta() != 0) {
+                request.setEta(calcETA(getTargetPosition(), getCurrentPos(), speed));
+            }
         } else if (target != null) {
-            target.setETA(calcETA(getTargetPosition(), getCurrentPos(), speed));
+            // Only update ETA if we haven't arrived yet
+            // Once ETA is set to 0 (arrived) by the behavior controller, don't overwrite it
+            if (target.getETA() != 0) {
+                target.setETA(calcETA(getTargetPosition(), getCurrentPos(), speed));
+            }
         }
     }
 
@@ -546,8 +554,8 @@ public class VirtualRobo {
 
     public void setRemoved(ServerLevel level) {
         RoboManager.get(level).remove(this.getId());
-        if (request != null && request.getStatus() == RoboRequest.Status.IN_PROGRESS) {
-            request.setStatus(RoboRequest.Status.PENDING);
+        if (request != null) {
+            request.setStatus(RoboRequest.Status.DONE);
         }
         despawnEntity();
     }
@@ -586,6 +594,9 @@ public class VirtualRobo {
 
     public void invalidateTarget() {
         this.targetVelocity = Vec3.ZERO;
+        if (this.target != null) {
+            this.target.setETA(-1); // Clear ETA when target is invalidated
+        }
         this.target = null;
     }
 

@@ -9,6 +9,9 @@ import de.theidler.create_mobile_packages.index.CMPItems;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.LogisticallyLinkedItem;
 import de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem;
 import de.theidler.create_mobile_packages.robo.PlayerTarget;
+import de.theidler.create_mobile_packages.toast.RemoveToastOnClientPacket;
+import net.createmod.catnip.platform.CatnipServices;
+import net.minecraft.server.level.ServerPlayer;
 import de.theidler.create_mobile_packages.robo.RoboManager;
 import de.theidler.create_mobile_packages.robo.VirtualRobo;
 import net.minecraft.core.BlockPos;
@@ -237,6 +240,10 @@ public class RoboBeeBehaviorController {
             if (delivered) {
                 robo.setItemStack(ItemStack.EMPTY);
                 robo.invalidateTarget();
+                // Remove the ETA toast from the player's screen
+                if (targetPlayer instanceof ServerPlayer serverPlayer) {
+                    CatnipServices.NETWORK.sendToClient(serverPlayer, new RemoveToastOnClientPacket(robo.getId()));
+                }
             }
         }
         // Try to deliver to block entity (BeePort or AdvancedBeePort)
@@ -256,6 +263,10 @@ public class RoboBeeBehaviorController {
         // Only applies to player-sent bees (no origin port) - port-sent bees should fly back to their origin port
         if (robo.getItemStack().isEmpty() && targetPlayer != null && robo.isBeeReturnToSender() && !robo.hasOriginPort()) {
             giveBeeToPlayer(targetPlayer, true, robo.getBeeFrequency());
+            // Remove the ETA toast from the player's screen
+            if (targetPlayer instanceof ServerPlayer serverPlayer) {
+                CatnipServices.NETWORK.sendToClient(serverPlayer, new RemoveToastOnClientPacket(robo.getId()));
+            }
             robo.setRemoved(robo.getServerLevel());
             return;
         }
@@ -273,6 +284,10 @@ public class RoboBeeBehaviorController {
             // If delivered to a player, add bee to player's inventory
             else if (targetPlayer != null) {
                 giveBeeToPlayer(targetPlayer, false, robo.getBeeFrequency());
+                // Remove the ETA toast from the player's screen
+                if (targetPlayer instanceof ServerPlayer serverPlayer) {
+                    CatnipServices.NETWORK.sendToClient(serverPlayer, new RemoveToastOnClientPacket(robo.getId()));
+                }
             }
             robo.setRemoved(robo.getServerLevel());
             return;

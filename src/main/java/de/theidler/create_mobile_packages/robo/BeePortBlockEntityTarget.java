@@ -8,7 +8,7 @@ import net.minecraft.world.phys.Vec3;
 public class BeePortBlockEntityTarget implements RoboTarget {
     private final BlockPos pos;
     private final ServerLevel level;
-    private int eta;
+    private int eta = -1;
 
     public BeePortBlockEntityTarget(BeePortBlockEntity be) {
         this.pos = be.getBlockPos();

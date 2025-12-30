@@ -11,6 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -22,10 +23,9 @@ public class BeePortMenu extends PackagePortMenu {
 
     public BeePortMenu(MenuType<?> type, int id, Inventory inv, RegistryFriendlyByteBuf extraData) {
         super(type, id, inv, extraData);
-        if (contentHolder instanceof BeePortBlockEntity beePortBlockEntity) {
-            this.data = beePortBlockEntity.getData();
-            this.addDataSlots(this.data);
-        }
+        // Client side - create empty data that will receive synced values from server
+        this.data = new SimpleContainerData(2);
+        this.addDataSlots(this.data);
     }
 
     public BeePortMenu(MenuType<?> type, int id, Inventory inv, BeePortBlockEntity beePortBlockEntity) {
@@ -122,9 +122,6 @@ public class BeePortMenu extends PackagePortMenu {
         return -1;
     }
     public boolean isBeeOnTravel() {
-        if (data != null && data.get(0) != -1) {
-            return data.get(1) == 1;
-        }
-        return false;
+        return data != null && data.get(1) == 1;
     }
 }

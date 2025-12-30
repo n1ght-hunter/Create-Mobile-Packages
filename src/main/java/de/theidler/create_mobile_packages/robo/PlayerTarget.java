@@ -21,7 +21,7 @@ import static de.theidler.create_mobile_packages.CMPHelper.doesAddressMatchPlaye
 
 public class PlayerTarget implements RoboTarget {
     private final Player player;
-    private int eta;
+    private int eta = -1;
 
     public PlayerTarget(Player player) {
         this.player = player;
