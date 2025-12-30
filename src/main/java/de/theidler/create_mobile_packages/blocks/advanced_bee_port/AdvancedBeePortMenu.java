@@ -22,10 +22,6 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
 
     private ContainerData data;
 
-    // Slot indices (after the parent class slots)
-    // Parent class has: 18 package slots (0-17) + 36 player inventory slots (18-53)
-    // Total parent slots: 54
-    // Our additions: RoboBee slot (54), Speed upgrade slot (55), Ender upgrade slot (56)
     private static final int ROBO_BEE_SLOT = 54;
     private static final int SPEED_UPGRADE_SLOT = 55;
     private static final int ENDER_UPGRADE_SLOT = 56;
@@ -62,10 +58,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
     protected void addSlots() {
         super.addSlots();
         if (contentHolder instanceof AdvancedBeePortBlockEntity advancedBeePortBlockEntity) {
-            // RoboBee slot - same position as regular BeePort
             addSlot(new BeePortBeeStackHandler(advancedBeePortBlockEntity.getRoboBeeInventory(), 0, 12, 60));
-
-            // Upgrade slots - positioned in the lower section, next to the bee slot
             addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 0, 140, 58, CMPItems.SPEED_UPGRADE.get()));
             addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 1, 158, 58, CMPItems.ENDER_UPGRADE.get()));
         }
@@ -80,7 +73,6 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
 
         ItemStack stack = slot.getItem();
 
-        // Move from RoboBee-Slot to Player Inventory
         if (index == ROBO_BEE_SLOT) {
             int originalCount = stack.getCount();
             if (moveItemStackTo(stack, 18, 54, false)) {
@@ -94,9 +86,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
                 result.setCount(moved);
                 return result;
             }
-        }
-        // Move from upgrade slots to Player Inventory
-        else if (index == SPEED_UPGRADE_SLOT || index == ENDER_UPGRADE_SLOT) {
+        } else if (index == SPEED_UPGRADE_SLOT || index == ENDER_UPGRADE_SLOT) {
             if (moveItemStackTo(stack, 18, 54, false)) {
                 if (stack.isEmpty()) {
                     slot.set(ItemStack.EMPTY);
@@ -105,9 +95,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
                 }
                 return stack.copy();
             }
-        }
-        // Move from Player Inventory to RoboBee-Slot
-        else if (stack.getItem() == CMPItems.ROBO_BEE.get()) {
+        } else if (stack.getItem() == CMPItems.ROBO_BEE.get()) {
             Slot roboBeeSlot = slots.get(ROBO_BEE_SLOT);
             ItemStack targetStack = roboBeeSlot.getItem();
 
@@ -135,9 +123,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
                 return result;
             }
             return ItemStack.EMPTY;
-        }
-        // Move Speed Upgrade from Player Inventory
-        else if (stack.getItem() == CMPItems.SPEED_UPGRADE.get()) {
+        } else if (stack.getItem() == CMPItems.SPEED_UPGRADE.get()) {
             Slot upgradeSlot = slots.get(SPEED_UPGRADE_SLOT);
             if (upgradeSlot.getItem().isEmpty()) {
                 ItemStack moved = stack.split(1);
@@ -150,9 +136,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
                 return moved;
             }
             return ItemStack.EMPTY;
-        }
-        // Move Ender Upgrade from Player Inventory
-        else if (stack.getItem() == CMPItems.ENDER_UPGRADE.get()) {
+        } else if (stack.getItem() == CMPItems.ENDER_UPGRADE.get()) {
             Slot upgradeSlot = slots.get(ENDER_UPGRADE_SLOT);
             if (upgradeSlot.getItem().isEmpty()) {
                 ItemStack moved = stack.split(1);
@@ -198,9 +182,20 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
         return false;
     }
 
-    /**
-     * Custom slot handler for upgrade items.
-     */
+    public boolean isReturnToSender() {
+        if (contentHolder instanceof AdvancedBeePortBlockEntity advancedBeePortBlockEntity) {
+            return advancedBeePortBlockEntity.isReturnToSender();
+        }
+        return true;
+    }
+
+    public BlockPos getBlockPos() {
+        if (contentHolder instanceof AdvancedBeePortBlockEntity advancedBeePortBlockEntity) {
+            return advancedBeePortBlockEntity.getBlockPos();
+        }
+        return BlockPos.ZERO;
+    }
+
     private static class UpgradeSlotHandler extends SlotItemHandler {
         private final net.minecraft.world.item.Item validItem;
 

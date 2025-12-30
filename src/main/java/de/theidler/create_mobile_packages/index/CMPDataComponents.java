@@ -41,6 +41,11 @@ public class CMPDataComponents {
                     .persistent(Codec.unboundedMap(UUIDUtil.STRING_CODEC, Codec.INT.listOf()))
     );
 
+    public static final DataComponentType<Boolean> RETURN_TO_SENDER = register(
+            "return_to_sender",
+            builder -> builder.persistent(Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL)
+    );
+
     private static <T> DataComponentType<T> register(String name, UnaryOperator<DataComponentType.Builder<T>> builder) {
         DataComponentType<T> type = builder.apply(DataComponentType.builder()).build();
         DATA_COMPONENTS.register(name, () -> type);

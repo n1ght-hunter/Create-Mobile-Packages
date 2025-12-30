@@ -6,6 +6,8 @@ import de.theidler.create_mobile_packages.items.mobile_packager.OpenEditMenuPack
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.RequestStockUpdate;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.SendPackage;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.*;
+import de.theidler.create_mobile_packages.blocks.advanced_bee_port.ToggleAdvancedPortReturnToSenderPacket;
+import de.theidler.create_mobile_packages.items.robo_bee.ToggleReturnToSenderPacket;
 import de.theidler.create_mobile_packages.toast.RemoveAllToastsOnClientPacket;
 import de.theidler.create_mobile_packages.toast.RemoveToastOnClientPacket;
 import de.theidler.create_mobile_packages.toast.ShowToastOnClientPacket;
@@ -25,6 +27,8 @@ public enum CMPPackets implements BasePacketPayload.PacketTypeProvider {
     OPEN_PORTABLE_STOCK_TICKER(OpenPortableStockTicker.class, OpenPortableStockTicker.STREAM_CODEC),
     OPEN_EDIT_MENU(OpenEditMenuPacket.class, OpenEditMenuPacket.STREAM_CODEC),
     CONFIRM_EDIT_MENU(ConfirmEditMenuPacket.class, ConfirmEditMenuPacket.STREAM_CODEC),
+    TOGGLE_RETURN_TO_SENDER(ToggleReturnToSenderPacket.class, ToggleReturnToSenderPacket.STREAM_CODEC),
+    TOGGLE_ADVANCED_PORT_RETURN_TO_SENDER(ToggleAdvancedPortReturnToSenderPacket.class, ToggleAdvancedPortReturnToSenderPacket.STREAM_CODEC),
 
     // Server to Client
     BIG_ITEM_STACK_LIST(GenericStackListPacket.class, GenericStackListPacket.STREAM_CODEC),
