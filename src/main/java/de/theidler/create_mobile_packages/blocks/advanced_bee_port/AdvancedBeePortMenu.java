@@ -59,8 +59,8 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
         super.addSlots();
         if (contentHolder instanceof AdvancedBeePortBlockEntity advancedBeePortBlockEntity) {
             addSlot(new BeePortBeeStackHandler(advancedBeePortBlockEntity.getRoboBeeInventory(), 0, 12, 60));
-            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 0, 140, 58, CMPItems.SPEED_UPGRADE.get()));
-            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 1, 158, 58, CMPItems.ENDER_UPGRADE.get()));
+            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 0, 140, 58, CMPItems.SPEED_UPGRADE.get(), 8));
+            addSlot(new UpgradeSlotHandler(advancedBeePortBlockEntity.getUpgradeInventory(), 1, 158, 58, CMPItems.ENDER_UPGRADE.get(), 1));
         }
     }
 
@@ -125,15 +125,29 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
             return ItemStack.EMPTY;
         } else if (stack.getItem() == CMPItems.SPEED_UPGRADE.get()) {
             Slot upgradeSlot = slots.get(SPEED_UPGRADE_SLOT);
-            if (upgradeSlot.getItem().isEmpty()) {
-                ItemStack moved = stack.split(1);
-                upgradeSlot.set(moved);
+            ItemStack targetStack = upgradeSlot.getItem();
+            int maxStackSize = 8;
+            int space = maxStackSize - (targetStack.isEmpty() ? 0 : targetStack.getCount());
+
+            if (space > 0) {
+                int toMove = Math.min(space, stack.getCount());
+                if (targetStack.isEmpty()) {
+                    ItemStack moved = stack.copy();
+                    moved.setCount(toMove);
+                    upgradeSlot.set(moved);
+                } else {
+                    targetStack.grow(toMove);
+                    upgradeSlot.setChanged();
+                }
+                stack.shrink(toMove);
                 if (stack.isEmpty()) {
                     slot.set(ItemStack.EMPTY);
                 } else {
                     slot.setChanged();
                 }
-                return moved;
+                ItemStack result = stack.copy();
+                result.setCount(toMove);
+                return result;
             }
             return ItemStack.EMPTY;
         } else if (stack.getItem() == CMPItems.ENDER_UPGRADE.get()) {
@@ -195,10 +209,12 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
 
     private static class UpgradeSlotHandler extends SlotItemHandler {
         private final net.minecraft.world.item.Item validItem;
+        private final int maxStackSize;
 
-        public UpgradeSlotHandler(net.neoforged.neoforge.items.IItemHandler itemHandler, int index, int xPosition, int yPosition, net.minecraft.world.item.Item validItem) {
+        public UpgradeSlotHandler(net.neoforged.neoforge.items.IItemHandler itemHandler, int index, int xPosition, int yPosition, net.minecraft.world.item.Item validItem, int maxStackSize) {
             super(itemHandler, index, xPosition, yPosition);
             this.validItem = validItem;
+            this.maxStackSize = maxStackSize;
         }
 
         @Override
@@ -208,7 +224,7 @@ public class AdvancedBeePortMenu extends PackagePortMenu {
 
         @Override
         public int getMaxStackSize() {
-            return 1;
+            return maxStackSize;
         }
     }
 }
