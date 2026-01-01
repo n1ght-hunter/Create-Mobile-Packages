@@ -1,6 +1,6 @@
 package de.theidler.create_mobile_packages.items.mobile_packager;
 
-import com.simibubi.create.content.logistics.AddressEditBox;
+import de.theidler.create_mobile_packages.gui.PlayerAddressEditBox;
 import com.simibubi.create.content.trains.station.NoShadowFontWrapper;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.foundation.gui.AllIcons;
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class MobilePackagerEditScreen extends AbstractSimiContainerScreen<MobilePackagerEditMenu> {
 
-    private AddressEditBox addressBox;
+    private PlayerAddressEditBox addressBox;
     private IconButton confirmButton;
     private final Inventory playerInventory;
 
@@ -39,7 +39,7 @@ public class MobilePackagerEditScreen extends AbstractSimiContainerScreen<Mobile
         menu.addSlots();
 
         String previousAddress = addressBox == null ? menu.contentHolder.address : addressBox.getValue();
-        addressBox = new AddressEditBox(this, new NoShadowFontWrapper(font), x + 55, y + 68, 110, 10, true, "@" + playerInventory.player.getName().getString());
+        addressBox = new PlayerAddressEditBox(this, new NoShadowFontWrapper(font), x + 55, y + 68, 110, 10, true, "@" + playerInventory.player.getName().getString());
         addressBox.setValue(previousAddress);
         addressBox.setTextColor(0x555555);
         addRenderableWidget(addressBox);

@@ -3,7 +3,7 @@ package de.theidler.create_mobile_packages.items.portable_stock_ticker;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.AllSoundEvents;
-import com.simibubi.create.content.logistics.AddressEditBox;
+import de.theidler.create_mobile_packages.gui.PlayerAddressEditBox;
 import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.factoryBoard.FactoryPanelScreen;
 import com.simibubi.create.content.logistics.filter.FilterItemStack;
@@ -74,7 +74,7 @@ public class PortableStockTickerScreen extends AbstractSimiContainerScreen<Porta
     int windowHeight;
 
     public EditBox searchBox;
-    public AddressEditBox addressBox;
+    public PlayerAddressEditBox addressBox;
 
     int emptyTicks = 0;
     int successTicks = 0;
@@ -231,7 +231,7 @@ public class PortableStockTickerScreen extends AbstractSimiContainerScreen<Porta
         boolean initial = addressBox == null;
         String previouslyUsedAddress = initial ? menu.portableStockTicker.previouslyUsedAddress : addressBox.getValue();
         addressBox =
-                new AddressEditBox(this, new NoShadowFontWrapper(font), x + 27, y + windowHeight - 36, 92, 10, true, "@" + this.playerInventory.player.getName().getString());
+                new PlayerAddressEditBox(this, new NoShadowFontWrapper(font), x + 27, y + windowHeight - 36, 92, 10, true, "@" + this.playerInventory.player.getName().getString());
         addressBox.setTextColor(0x714A40);
         addressBox.setValue(previouslyUsedAddress);
         addRenderableWidget(addressBox);
