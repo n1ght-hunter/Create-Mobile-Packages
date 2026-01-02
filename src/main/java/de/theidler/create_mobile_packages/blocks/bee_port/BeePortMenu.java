@@ -2,6 +2,7 @@ package de.theidler.create_mobile_packages.blocks.bee_port;
 
 import com.simibubi.create.content.logistics.packagePort.PackagePortMenu;
 import de.theidler.create_mobile_packages.index.CMPItems;
+import de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem;
 import de.theidler.create_mobile_packages.index.CMPMenuTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -81,8 +82,8 @@ public class BeePortMenu extends PackagePortMenu {
                 return result;
             }
         }
-        // Move from Player Inventory to RoboBee-Slot
-        else if (stack.getItem() == CMPItems.ROBO_BEE.get()) {
+        // Move from Player Inventory to RoboBee-Slot (accept both regular and advanced bees)
+        else if (stack.getItem() instanceof RoboBeeItem) {
             Slot roboBeeSlot = slots.get(54);
             ItemStack targetStack = roboBeeSlot.getItem();
 

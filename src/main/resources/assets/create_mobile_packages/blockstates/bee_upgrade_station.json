@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "create_mobile_packages:block/bee_upgrade_station" },
+    "facing=south": { "model": "create_mobile_packages:block/bee_upgrade_station", "y": 180 },
+    "facing=west": { "model": "create_mobile_packages:block/bee_upgrade_station", "y": 270 },
+    "facing=east": { "model": "create_mobile_packages:block/bee_upgrade_station", "y": 90 }
+  }
+}

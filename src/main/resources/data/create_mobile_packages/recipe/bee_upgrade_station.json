@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BIB",
+    "SAS",
+    "CCC"
+  ],
+  "key": {
+    "B": {
+      "item": "create:brass_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "S": {
+      "item": "create_mobile_packages:speed_upgrade"
+    },
+    "A": {
+      "item": "minecraft:anvil"
+    },
+    "C": {
+      "item": "create:brass_casing"
+    }
+  },
+  "result": {
+    "id": "create_mobile_packages:bee_upgrade_station",
+    "count": 1
+  }
+}

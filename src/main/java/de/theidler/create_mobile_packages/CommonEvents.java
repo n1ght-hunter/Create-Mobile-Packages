@@ -1,6 +1,5 @@
 package de.theidler.create_mobile_packages;
 
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.GlobalDronePortTracker;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboEntity;
@@ -32,7 +31,6 @@ public class CommonEvents {
         @SubscribeEvent
         public static void registerCapabilities(net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) {
             BeePortBlockEntity.registerCapabilities(event);
-            AdvancedBeePortBlockEntity.registerCapabilities(event);
         }
     }
 

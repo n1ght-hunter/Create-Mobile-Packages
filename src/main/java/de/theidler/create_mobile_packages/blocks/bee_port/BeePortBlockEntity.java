@@ -10,6 +10,7 @@ import de.theidler.create_mobile_packages.CreateMobilePackages;
 import de.theidler.create_mobile_packages.index.CMPBlockEntities;
 import de.theidler.create_mobile_packages.index.CMPItems;
 import de.theidler.create_mobile_packages.index.config.CMPConfigs;
+import de.theidler.create_mobile_packages.blocks.bee_upgrade_station.BeeUpgradeStationBlockEntity;
 import de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem;
 import de.theidler.create_mobile_packages.robo.RoboManager;
 import de.theidler.create_mobile_packages.robo.VirtualRobo;
@@ -391,7 +392,22 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
         }
         roboSendCooldown = 2;
         if (level instanceof ServerLevel serverLevel) {
-            RoboManager.get(serverLevel).newRobo(serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(), 0, true, addressFilter, null);
+            // Check if bee has any upgrades applied
+            int speedUpgrades = BeeUpgradeStationBlockEntity.getSpeedUpgradeCount(consumedBee);
+            boolean hasEnderUpgrade = BeeUpgradeStationBlockEntity.hasEnderUpgrade(consumedBee);
+            boolean returnToSender = RoboBeeItem.isReturnToSender(consumedBee);
+
+            if (speedUpgrades > 0 || hasEnderUpgrade) {
+                // Calculate effective speed based on upgrades
+                int baseSpeed = CMPConfigs.server().beeSpeed.get();
+                int speed = speedUpgrades > 0
+                    ? baseSpeed * CMPConfigs.server().speedUpgradeMultiplier.get() * speedUpgrades
+                    : baseSpeed;
+                boolean crossDimensional = hasEnderUpgrade && CMPConfigs.server().enderUpgradeEnabled.get();
+                RoboManager.get(serverLevel).newAdvancedRobo(serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(), 0, speed, crossDimensional, returnToSender, addressFilter, null);
+            } else {
+                RoboManager.get(serverLevel).newRobo(serverLevel, itemStack, this.getBlockPos(), this.getLogisticsNetworkId(), 0, true, addressFilter, null);
+            }
         }
         inventory.setStackInSlot(slot, ItemStack.EMPTY);
     }
@@ -545,6 +561,17 @@ public class BeePortBlockEntity extends PackagePortBlockEntity {
 
     public void addBeeToRoboBeeInventory(int amount) {
         roboBeeInventory.insertItem(0, new ItemStack(CMPItems.ROBO_BEE.get(), amount), false);
+    }
+
+    /**
+     * Adds a specific bee ItemStack to the robo bee inventory.
+     * This preserves the bee's data components (upgrades for advanced bees).
+     * @param beeStack The bee ItemStack to add
+     */
+    public void addBeeToRoboBeeInventory(ItemStack beeStack) {
+        if (!beeStack.isEmpty()) {
+            roboBeeInventory.insertItem(0, beeStack, false);
+        }
     }
 
     @Override

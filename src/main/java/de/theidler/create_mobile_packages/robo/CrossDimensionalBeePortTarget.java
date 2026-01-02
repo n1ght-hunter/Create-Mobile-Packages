@@ -1,6 +1,5 @@
 package de.theidler.create_mobile_packages.robo;
 
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -10,7 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A RoboTarget that points to a BeePortBlockEntity or AdvancedBeePortBlockEntity in another dimension.
+ * A RoboTarget that points to a BeePortBlockEntity in another dimension.
  * Used by the Ender Upgrade for cross-dimensional delivery.
  */
 public class CrossDimensionalBeePortTarget implements RoboTarget {
@@ -41,7 +40,7 @@ public class CrossDimensionalBeePortTarget implements RoboTarget {
     public BlockEntity asPortBlockEntity() {
         if (level == null) return null;
         BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) {
+        if (be instanceof BeePortBlockEntity) {
             return be;
         }
         return null;
@@ -57,8 +56,6 @@ public class CrossDimensionalBeePortTarget implements RoboTarget {
         BlockEntity be = asPortBlockEntity();
         if (be instanceof BeePortBlockEntity bpbe) {
             return !bpbe.isRemoved() && !bpbe.isFull();
-        } else if (be instanceof AdvancedBeePortBlockEntity abpbe) {
-            return !abpbe.isRemoved() && !abpbe.isFull();
         }
         return false;
     }

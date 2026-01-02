@@ -46,6 +46,16 @@ public class CMPDataComponents {
             builder -> builder.persistent(Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL)
     );
 
+    public static final DataComponentType<Integer> BEE_SPEED_UPGRADES = register(
+            "bee_speed_upgrades",
+            builder -> builder.persistent(Codec.INT).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.INT)
+    );
+
+    public static final DataComponentType<Boolean> BEE_ENDER_UPGRADE = register(
+            "bee_ender_upgrade",
+            builder -> builder.persistent(Codec.BOOL).networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.BOOL)
+    );
+
     private static <T> DataComponentType<T> register(String name, UnaryOperator<DataComponentType.Builder<T>> builder) {
         DataComponentType<T> type = builder.apply(DataComponentType.builder()).build();
         DATA_COMPONENTS.register(name, () -> type);

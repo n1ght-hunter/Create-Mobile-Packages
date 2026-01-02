@@ -2,7 +2,7 @@ package de.theidler.create_mobile_packages.items.robo_bee;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.CMPHelper;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
+import de.theidler.create_mobile_packages.blocks.bee_upgrade_station.BeeUpgradeStationBlockEntity;
 import de.theidler.create_mobile_packages.index.CMPDataComponents;
 import de.theidler.create_mobile_packages.index.config.CMPConfigs;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.StockCheckingItem;
@@ -93,16 +93,16 @@ public class RoboBeeItem extends StockCheckingItem {
      * Result of target reachability check.
      * @param canReach Whether the target can be reached
      * @param requiresCrossDimensional Whether cross-dimensional travel is needed
-     * @param targetSpeed The speed to use (from target Advanced Port if applicable, otherwise default)
+     * @param targetSpeed The speed to use (default speed for regular bees)
      */
-    private record TargetReachability(boolean canReach, boolean requiresCrossDimensional, int targetSpeed) {}
+    protected record TargetReachability(boolean canReach, boolean requiresCrossDimensional, int targetSpeed) {}
 
     /**
-     * Checks if a bee can reach its target and whether it needs cross-dimensional travel.
-     * Player-spawned bees can:
-     * - Always reach a player (any dimension - enables cross-dimensional if needed)
+     * Checks if a regular bee can reach its target.
+     * Regular RoboBees can only:
+     * - Reach a player in the same dimension
      * - Reach a port in the same dimension
-     * - Reach a port in another dimension ONLY if it's an Advanced Bee Port with Ender upgrade
+     * For cross-dimensional travel, use AdvancedRoboBee with Ender upgrade.
      */
     private static TargetReachability checkTargetReachability(ServerLevel level, String address, BlockPos spawnPos) {
         int defaultSpeed = CMPConfigs.server().beeSpeed.get();
@@ -111,43 +111,19 @@ public class RoboBeeItem extends StockCheckingItem {
             return new TargetReachability(false, false, defaultSpeed);
         }
 
-        // Check if target is a player in the same dimension first
+        // Check if target is a player in the same dimension
         PlayerTarget samePlayerTarget = PlayerTarget.fromAddress(level, address);
         if (samePlayerTarget.isValid()) {
             return new TargetReachability(true, false, defaultSpeed);
         }
 
-        // Check if target is a player in another dimension
-        PlayerTarget crossPlayerTarget = PlayerTarget.fromAddressAcrossDimensions(level, address);
-        if (crossPlayerTarget.isValid()) {
-            return new TargetReachability(true, true, defaultSpeed); // Requires cross-dimensional
-        }
-
-        // Check if target is a port in current dimension (any port type works)
+        // Check if target is a port in current dimension
         BlockEntity port = CMPHelper.getClosestAnyPort(level, address, spawnPos, null, UUID.randomUUID());
         if (port != null) {
-            // If target is an Advanced Port, use its effective speed
-            if (port instanceof AdvancedBeePortBlockEntity advancedPort) {
-                return new TargetReachability(true, false, advancedPort.getEffectiveSpeed());
-            }
             return new TargetReachability(true, false, defaultSpeed);
         }
 
-        // Search other dimensions - only Advanced Bee Ports with Ender upgrade can be reached
-        if (level.getServer() != null) {
-            for (ServerLevel otherLevel : level.getServer().getAllLevels()) {
-                if (otherLevel.dimension().equals(level.dimension())) continue;
-
-                // Only check for Advanced Bee Ports with Ender upgrade in other dimensions
-                AdvancedBeePortBlockEntity advancedPort = CMPHelper.getClosestAdvancedBeePort(otherLevel, address, spawnPos, null, UUID.randomUUID());
-                if (advancedPort != null && advancedPort.hasEnderUpgrade()) {
-                    // Use the target port's effective speed
-                    return new TargetReachability(true, true, advancedPort.getEffectiveSpeed());
-                }
-            }
-        }
-
-        // No valid reachable target found
+        // Regular bees cannot cross dimensions - use AdvancedRoboBee with Ender upgrade for that
         return new TargetReachability(false, false, defaultSpeed);
     }
 
@@ -187,6 +163,16 @@ public class RoboBeeItem extends StockCheckingItem {
         tooltipComponents.add(Component.translatable("tooltip.create_mobile_packages.robo_bee.robo_bee").withStyle(ChatFormatting.GRAY));
         if (CMPConfigs.server().allowRoboBeeSpawnPackageTransport.get()) {
             tooltipComponents.add(Component.translatable("tooltip.create_mobile_packages.robo_bee.package_transport").withStyle(ChatFormatting.GRAY));
+        }
+
+        // Show upgrade status if any upgrades are applied
+        int speedUpgrades = BeeUpgradeStationBlockEntity.getSpeedUpgradeCount(stack);
+        boolean hasEnderUpgrade = BeeUpgradeStationBlockEntity.hasEnderUpgrade(stack);
+        if (speedUpgrades > 0) {
+            tooltipComponents.add(Component.translatable("tooltip.create_mobile_packages.robo_bee.speed_upgrades", speedUpgrades, BeeUpgradeStationBlockEntity.MAX_SPEED_UPGRADES).withStyle(ChatFormatting.AQUA));
+        }
+        if (hasEnderUpgrade) {
+            tooltipComponents.add(Component.translatable("tooltip.create_mobile_packages.robo_bee.ender_upgrade").withStyle(ChatFormatting.LIGHT_PURPLE));
         }
 
         // Show return to sender status

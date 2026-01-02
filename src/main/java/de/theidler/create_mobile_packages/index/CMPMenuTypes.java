@@ -3,10 +3,10 @@ package de.theidler.create_mobile_packages.index;
 import com.simibubi.create.content.logistics.packagePort.PackagePortMenu;
 import com.tterrag.registrate.util.entry.MenuEntry;
 import de.theidler.create_mobile_packages.CreateMobilePackages;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortMenu;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortScreen;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortMenu;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortScreen;
+import de.theidler.create_mobile_packages.blocks.bee_upgrade_station.BeeUpgradeStationMenu;
+import de.theidler.create_mobile_packages.blocks.bee_upgrade_station.BeeUpgradeStationScreen;
 import de.theidler.create_mobile_packages.items.mobile_packager.*;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.PortableStockTickerMenu;
 import de.theidler.create_mobile_packages.items.portable_stock_ticker.PortableStockTickerScreen;
@@ -41,11 +41,11 @@ public class CMPMenuTypes {
                     () -> MobilePackagerEditScreen::new
             ).register();
 
-    public static final MenuEntry<PackagePortMenu> ADVANCED_BEE_PORT_MENU =
+    public static final MenuEntry<BeeUpgradeStationMenu> BEE_UPGRADE_STATION_MENU =
             CreateMobilePackages.REGISTRATE.menu(
-                    "advanced_bee_port_menu",
-                    AdvancedBeePortMenu::new,
-                    () -> AdvancedBeePortScreen::new
+                    "bee_upgrade_station_menu",
+                    BeeUpgradeStationMenu::new,
+                    () -> BeeUpgradeStationScreen::new
             ).register();
 
     public static void register() {

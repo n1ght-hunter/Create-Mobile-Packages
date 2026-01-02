@@ -60,8 +60,14 @@
   "item.create_mobile_packages.mobile_packager.tooltip.behaviour1": "Opens a menu to create Packages",
   "item.create_mobile_packages.mobile_packager.tooltip.condition2": "When sneak used",
   "item.create_mobile_packages.mobile_packager.tooltip.behaviour2": "Opens a menu to modify Packages",
-  "block.create_mobile_packages.advanced_bee_port": "Advanced Robo Bee Port",
-  "item.create_mobile_packages.advanced_bee_port": "Advanced Robo Bee Port",
+  "block.create_mobile_packages.bee_upgrade_station": "Bee Upgrade Station",
+  "tooltip.create_mobile_packages.robo_bee.speed_upgrades": "Speed Upgrades: %1$s/%2$s",
+  "tooltip.create_mobile_packages.robo_bee.ender_upgrade": "Ender Upgrade: Installed",
+  "create_mobile_packages.bee_upgrade_station.current_upgrades": "Current Upgrades:",
+  "create_mobile_packages.bee_upgrade_station.speed_count": "Speed: %1$s/%2$s",
+  "create_mobile_packages.bee_upgrade_station.ender_installed": "Ender: Installed",
+  "create_mobile_packages.bee_upgrade_station.no_upgrades_yet": "No upgrades installed",
+  "create_mobile_packages.bee_upgrade_station.basic_bee": "Basic Robo Bee (add upgrades)",
   "item.create_mobile_packages.speed_upgrade": "Speed Upgrade",
   "item.create_mobile_packages.speed_upgrade.tooltip": "Increases Robo Bee speed by %1$sx",
   "item.create_mobile_packages.ender_upgrade": "Ender Upgrade",
@@ -74,6 +80,4 @@
   "message.create_mobile_packages.robo_bee.no_package": "Hold a Package in your offhand to spawn the Robo Bee",
   "message.create_mobile_packages.robo_bee.transport_disabled": "Package transport via spawn is disabled",
   "message.create_mobile_packages.robo_bee.target_unreachable": "No valid target found for this package address",
-  "create_mobile_packages.advanced_bee_port.return_to_sender.enabled": "Return to Sender: Enabled (Click to disable)",
-  "create_mobile_packages.advanced_bee_port.return_to_sender.disabled": "Return to Sender: Disabled (Click to enable)"
 }

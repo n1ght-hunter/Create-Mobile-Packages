@@ -1,7 +1,6 @@
 package de.theidler.create_mobile_packages.entities.robo_entity;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.index.CMPDataComponents;
@@ -221,8 +220,6 @@ public class RoboBeeBehaviorController {
         if (!robo.getItemStack().isEmpty()) {
             if (port instanceof BeePortBlockEntity bpbe) {
                 portIsFull = bpbe.isFull();
-            } else if (port instanceof AdvancedBeePortBlockEntity abpbe) {
-                portIsFull = abpbe.isFull();
             }
         }
 
@@ -269,12 +266,10 @@ public class RoboBeeBehaviorController {
                 }
             }
         }
-        // Try to deliver to block entity (BeePort or AdvancedBeePort)
+        // Try to deliver to block entity (BeePort)
         if (!delivered && targetPort != null && !robo.getItemStack().isEmpty()) {
             if (targetPort instanceof BeePortBlockEntity bpbe) {
                 delivered = bpbe.addItemStack(robo.getItemStack());
-            } else if (targetPort instanceof AdvancedBeePortBlockEntity abpbe) {
-                delivered = abpbe.addItemStack(robo.getItemStack());
             }
             if (delivered) {
                 robo.setItemStack(ItemStack.EMPTY);
@@ -300,8 +295,6 @@ public class RoboBeeBehaviorController {
             if (targetPort != null) {
                 if (targetPort instanceof BeePortBlockEntity bpbe) {
                     bpbe.addBeeToRoboBeeInventory(1);
-                } else if (targetPort instanceof AdvancedBeePortBlockEntity abpbe) {
-                    abpbe.addBeeToRoboBeeInventory(1);
                 }
             }
             // If delivered to a player, add bee to player's inventory
@@ -346,8 +339,6 @@ public class RoboBeeBehaviorController {
         BlockEntity blockEntity = robo.getServerLevel().getBlockEntity(BlockPos.containing(robo.getCurrentPos()));
         if (blockEntity instanceof BeePortBlockEntity bpbe) {
             bpbe.addBeeToRoboBeeInventory(1);
-        } else if (blockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
-            abpbe.addBeeToRoboBeeInventory(1);
         }
         if (robo.getRequest() != null) {
             robo.getRequest().setStatus(RoboRequest.Status.DONE);
@@ -359,8 +350,6 @@ public class RoboBeeBehaviorController {
     private void openPort(BlockEntity port, boolean open) {
         if (port instanceof BeePortBlockEntity bpbe) {
             BeePortBlockEntity.setOpen(bpbe, open);
-        } else if (port instanceof AdvancedBeePortBlockEntity abpbe) {
-            AdvancedBeePortBlockEntity.setOpen(abpbe, open);
         }
     }
 

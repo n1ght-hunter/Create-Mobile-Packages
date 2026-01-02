@@ -1,6 +1,6 @@
 package de.theidler.create_mobile_packages.blocks.bee_port;
 
-import de.theidler.create_mobile_packages.index.CMPItems;
+import de.theidler.create_mobile_packages.items.robo_bee.RoboBeeItem;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
@@ -14,7 +14,8 @@ public class BeePortBeeStackHandler extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(@NotNull ItemStack stack) {
-        if (stack.getItem() == CMPItems.ROBO_BEE.get()) {
+        // Accept both regular RoboBee and AdvancedRoboBee
+        if (stack.getItem() instanceof RoboBeeItem) {
             return super.mayPlace(stack);
         }
         return false;

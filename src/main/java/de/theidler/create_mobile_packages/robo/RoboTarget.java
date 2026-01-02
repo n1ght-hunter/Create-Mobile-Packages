@@ -14,7 +14,7 @@ public interface RoboTarget {
     }
 
     /**
-     * Returns the target as a generic BlockEntity (for both BeePort and AdvancedBeePort).
+     * Returns the target as a generic BlockEntity.
      */
     default BlockEntity asPortBlockEntity() {
         return asBeePortBlockEntity();

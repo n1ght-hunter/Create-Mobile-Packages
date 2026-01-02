@@ -2,7 +2,6 @@ package de.theidler.create_mobile_packages.robo;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
 import de.theidler.create_mobile_packages.CMPHelper;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.RoboRequest;
 import de.theidler.create_mobile_packages.entities.robo_entity.RoboBeeBehaviorController;
@@ -77,7 +76,7 @@ public class VirtualRobo {
         this.behaviorController = new RoboBeeBehaviorController();
         // Only set origin port if there's actually a port at this position
         net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(spawnPos);
-        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) {
+        if (be instanceof BeePortBlockEntity) {
             this.originPortPos = spawnPos;
             this.originPortDimension = level.dimension();
         }
@@ -222,11 +221,7 @@ public class VirtualRobo {
         if (serverLevel.dimension().equals(originPortDimension)) {
             net.minecraft.world.level.block.entity.BlockEntity originBE = serverLevel.getBlockEntity(originPortPos);
             // Fly to the origin port even if full - bee will wait there
-            if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved()) {
-                target = new AdvancedBeePortBlockEntityTarget(abpbe);
-                targetDimension = serverLevel.dimension();
-                return true;
-            } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
+            if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
                 target = new BeePortBlockEntityTarget(bpbe);
                 targetDimension = serverLevel.dimension();
                 return true;
@@ -236,11 +231,7 @@ public class VirtualRobo {
             ServerLevel originLevel = serverLevel.getServer().getLevel(originPortDimension);
             if (originLevel != null) {
                 net.minecraft.world.level.block.entity.BlockEntity originBE = originLevel.getBlockEntity(originPortPos);
-                if (originBE instanceof AdvancedBeePortBlockEntity abpbe && !abpbe.isRemoved()) {
-                    target = new CrossDimensionalBeePortTarget(originLevel, originPortPos);
-                    targetDimension = originPortDimension;
-                    return true;
-                } else if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
+                if (originBE instanceof BeePortBlockEntity bpbe && !bpbe.isRemoved()) {
                     target = new CrossDimensionalBeePortTarget(originLevel, originPortPos);
                     targetDimension = originPortDimension;
                     return true;
@@ -280,16 +271,9 @@ public class VirtualRobo {
         // Try finding a port with this address
         BlockPos currentBlockPos = BlockPos.containing(currentPos);
         net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, returnAddress, currentBlockPos, this, logisticsNetworkId);
-        if (targetBlockEntity == null) {
-            targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(serverLevel, returnAddress, currentBlockPos, this, logisticsNetworkId);
-        }
 
         if (targetBlockEntity instanceof BeePortBlockEntity bpbe) {
             target = new BeePortBlockEntityTarget(bpbe);
-            targetDimension = serverLevel.dimension();
-            return true;
-        } else if (targetBlockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
-            target = new AdvancedBeePortBlockEntityTarget(abpbe);
             targetDimension = serverLevel.dimension();
             return true;
         }
@@ -300,9 +284,6 @@ public class VirtualRobo {
                 if (otherLevel.dimension().equals(serverLevel.dimension())) continue;
 
                 targetBlockEntity = CMPHelper.getClosestBeePort(otherLevel, returnAddress, currentBlockPos, this, logisticsNetworkId);
-                if (targetBlockEntity == null) {
-                    targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(otherLevel, returnAddress, currentBlockPos, this, logisticsNetworkId);
-                }
 
                 if (targetBlockEntity != null) {
                     target = new CrossDimensionalBeePortTarget(otherLevel, targetBlockEntity.getBlockPos());
@@ -325,16 +306,9 @@ public class VirtualRobo {
         BlockPos currentBlockPos = BlockPos.containing(currentPos);
 
         net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = CMPHelper.getClosestBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
-        if (targetBlockEntity == null) {
-            targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(serverLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
-        }
 
         if (targetBlockEntity instanceof BeePortBlockEntity bpbe) {
             target = new BeePortBlockEntityTarget(bpbe);
-            targetDimension = serverLevel.dimension();
-            return true;
-        } else if (targetBlockEntity instanceof AdvancedBeePortBlockEntity abpbe) {
-            target = new AdvancedBeePortBlockEntityTarget(abpbe);
             targetDimension = serverLevel.dimension();
             return true;
         }
@@ -352,9 +326,6 @@ public class VirtualRobo {
 
             BlockPos currentBlockPos = BlockPos.containing(currentPos);
             net.minecraft.world.level.block.entity.BlockEntity targetBlockEntity = CMPHelper.getClosestBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
-            if (targetBlockEntity == null) {
-                targetBlockEntity = CMPHelper.getClosestAdvancedBeePort(otherLevel, targetAddress, currentBlockPos, this, logisticsNetworkId);
-            }
 
             if (targetBlockEntity != null) {
                 target = new CrossDimensionalBeePortTarget(otherLevel, targetBlockEntity.getBlockPos());
@@ -539,20 +510,20 @@ public class VirtualRobo {
     }
 
     /**
-     * Gets the starting port block entity, which can be either a BeePortBlockEntity or AdvancedBeePortBlockEntity.
+     * Gets the starting port block entity.
      * Returns the BlockEntity for position calculations and port operations.
      */
     public @Nullable net.minecraft.world.level.block.entity.BlockEntity getStartPortBlockEntity() {
         net.minecraft.world.level.block.entity.BlockEntity be;
 
         be = serverLevel.getBlockEntity(BlockPos.containing(currentPos));
-        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+        if (be instanceof BeePortBlockEntity) return be;
 
         be = serverLevel.getBlockEntity(BlockPos.containing(currentPos.subtract(0,1,0)));
-        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+        if (be instanceof BeePortBlockEntity) return be;
 
         be = serverLevel.getBlockEntity(BlockPos.containing(currentPos.subtract(0,2,0)));
-        if (be instanceof BeePortBlockEntity || be instanceof AdvancedBeePortBlockEntity) return be;
+        if (be instanceof BeePortBlockEntity) return be;
 
         return null;
     }

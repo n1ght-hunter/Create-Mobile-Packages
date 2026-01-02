@@ -1,8 +1,6 @@
 package de.theidler.create_mobile_packages;
 
 import com.simibubi.create.content.logistics.box.PackageItem;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedBeePortBlockEntity;
-import de.theidler.create_mobile_packages.blocks.advanced_bee_port.AdvancedDronePortTracker;
 import de.theidler.create_mobile_packages.blocks.bee_port.BeePortBlockEntity;
 import de.theidler.create_mobile_packages.blocks.bee_port.DronePortTracker;
 import de.theidler.create_mobile_packages.index.config.CMPConfigs;
@@ -112,58 +110,12 @@ public class CMPHelper {
     }
 
     /**
-     * Finds the closest AdvancedBeePortBlockEntity to the given origin, optionally filtered by an address.
-     *
-     * @param address The address to filter by, or {@code null} for no filtering.
-     * @return The closest AdvancedBeePortBlockEntity that matches the filter criteria, or {@code null} if none found.
-     */
-    public static AdvancedBeePortBlockEntity getClosestAdvancedBeePort(Level level, String address, BlockPos origin, VirtualRobo entity, UUID logisticsNetworkId) {
-        if (level instanceof ServerLevel serverLevel) {
-            AdvancedDronePortTracker tracker = AdvancedDronePortTracker.get(serverLevel);
-            List<AdvancedBeePortBlockEntity> allBEs = new ArrayList<>(tracker.getAllByNetwork(logisticsNetworkId));
-            if (allBEs.isEmpty()) {
-                // if there are no Advanced Bee Ports in the network, then allow the bee to fly to any network
-                allBEs.addAll(tracker.getAll());
-            }
-            allBEs.removeIf(BlockEntity::isRemoved);
-            allBEs.removeIf(dpbe -> !isWithinRange(dpbe.getBlockPos(), origin));
-            if (address != null && !address.isEmpty()) {
-                allBEs.removeIf(dpbe -> !PackageItem.matchAddress(address, dpbe.addressFilter));
-            }
-            // Note: We intentionally do NOT filter by canAcceptEntity here.
-            // The bee needs to find a target even if the port is temporarily full.
-            // The actual delivery will wait for the port to have space.
-            return allBEs.stream().min(Comparator.comparingDouble(a -> a.getBlockPos().distSqr(origin))).orElse(null);
-        }
-        return null;
-    }
-
-    /**
-     * Helper class to wrap port info for comparison.
-     */
-    public record PortInfo(BlockEntity port, BlockPos pos, double distanceSq) {}
-
-    /**
-     * Finds the closest port (BeePort or AdvancedBeePort) to the given origin.
+     * Finds the closest port (BeePort) to the given origin.
      *
      * @param address The address to filter by, or {@code null} for no filtering.
      * @return The closest port BlockEntity, or {@code null} if none found.
      */
     public static BlockEntity getClosestAnyPort(Level level, String address, BlockPos origin, VirtualRobo entity, UUID logisticsNetworkId) {
-        BeePortBlockEntity beePort = getClosestBeePort(level, address, origin, entity, logisticsNetworkId);
-        AdvancedBeePortBlockEntity advancedPort = getClosestAdvancedBeePort(level, address, origin, entity, logisticsNetworkId);
-
-        if (beePort == null && advancedPort == null) {
-            return null;
-        } else if (beePort == null) {
-            return advancedPort;
-        } else if (advancedPort == null) {
-            return beePort;
-        }
-
-        // Return the closest one
-        double beePortDist = beePort.getBlockPos().distSqr(origin);
-        double advancedPortDist = advancedPort.getBlockPos().distSqr(origin);
-        return beePortDist <= advancedPortDist ? beePort : advancedPort;
+        return getClosestBeePort(level, address, origin, entity, logisticsNetworkId);
     }
 }
